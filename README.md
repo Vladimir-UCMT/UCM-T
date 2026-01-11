@@ -3,6 +3,14 @@
 **Unified Compressible Medium Theory (UCM-T)**  
 Research hub for models, calibration pipelines, and reproducible benchmarks.
 
+## Navigation
+
+- Documentation: [`docs/`](docs/)  
+  Methodological manifesto (RU/EN) and lightweight project conventions.
+
+- Modules: [`modules/`](modules/)  
+  Domain-specific workspaces (e.g., rotation curves) with reproducibility links.
+
 This repository serves as a central coordination point for:
 - theoretical models based on the Unified Compressible Medium framework,
 - calibration pipelines across different physical domains,
