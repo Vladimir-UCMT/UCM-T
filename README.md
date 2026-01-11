@@ -1,4 +1,11 @@
 # UCM-T
+## Start here
+
+- Manifesto (EN): `docs/manifesto_en.md`
+- Manifesto (RU): `docs/manifesto_ru.md`
+- Modules: `modules/`
+- Results contract: `tools/results_contract.md`
+
 
 **Unified Compressible Medium Theory (UCM-T)**  
 Research hub for models, calibration pipelines, and reproducible benchmarks.
