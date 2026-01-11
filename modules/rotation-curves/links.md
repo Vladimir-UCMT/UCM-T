@@ -10,9 +10,13 @@ datasets, reproducibility bundles, benchmark archives, and related references.
 
 ## Reproducibility bundles (Zenodo)
 
-- **UCM-Engine Pilot Test on SPARC Rotation Curves (Benchmark v2)**  
-  Yakovlev, V. (2026). *UCM-Engine Pilot Test on SPARC Rotation Curves (Benchmark v2): Reproducible Fits with a Fixed Medium-Regime.* Zenodo.  
-  DOI: `10.5281/zenodo.18126273`
+- **UCM Engine: Rotation Curve Benchmark (BENCH30 OUTER V12)**  
+  Yakovlev, V. (2026). *UCM Engine: Rotation Curve Benchmark (BENCH30 OUTER V12).*  
+  Zenodo. DOI: https://doi.org/10.5281/zenodo.18213329
+
+  Stabilized reference benchmark of the UCM rotation-curve engine,
+  validated on real observational data using the OUTER calibration regime.
+
 
 ---
 
