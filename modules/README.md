@@ -9,6 +9,10 @@ external hosting for large datasets/outputs.
 
 - **Rotation Curves** — [modules/rotation-curves/](rotation-curves/)  
   Galactic rotation curves: calibration pipelines, benchmarks, and external links.
+  
+  - **Ringdown** — [modules/ringdown/](ringdown/)  
+  Ringdown modeling, inference pipelines, and reproducibility links.
+
 
 ## Conventions (lightweight)
 
