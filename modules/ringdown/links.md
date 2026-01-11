@@ -8,9 +8,10 @@ datasets, reproducibility bundles, benchmark archives, and related references.
 
 ---
 
-## Reproducibility bundles (Zenodo)
+## Reproducible benchmarks
 
-- (to be added) CVN/RD ringdown reproducibility bundle — planned archive with scripts, configs, and result summaries.
+Canonical reproducible bundles for the CVN ringdown pipeline will be linked here
+once the benchmark definition is frozen.
 
 ---
 
