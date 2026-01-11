@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it."
+title: "UCM-T"
+type: software
+authors:
+  - family-names: "Yakovlev"
+    given-names: "Vladimir"
+repository-code: "https://github.com/Vladimir-UCMT/UCM-T"
+license: "MIT"
+keywords:
+  - "UCM-T"
+  - "Unified Compressible Medium Theory"
+  - "calibration pipeline"
+  - "reproducible benchmarks"
+  - "computational physics"
+abstract: >
+  Unified Compressible Medium Theory (UCM-T): a research hub for models,
+  calibration pipelines, and reproducible benchmarks across multiple domains.
