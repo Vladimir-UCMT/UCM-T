@@ -2,6 +2,9 @@
 
 This module collects UCM-T related work on **ringdown signals** of compact objects:
 models, inference pipelines, and reproducible benchmarks.
+Reproducibility
+Reproducible benchmarks for this module are under active development.
+Links to stable reproduction bundles and procedures will be provided here.
 
 ## Scope
 
