@@ -1,5 +1,28 @@
 # Methodological Manifesto of UCM-T
 
+## UCM Calibration Hub (reproducible pipeline)
+
+This repository is a **calibration hub**, not a collection of ideas. Each module implements a reproducible pipeline:
+
+**data → model → metric → artifacts → comparison vs baseline**
+
+Minimum requirements for each module:
+1) data or a measurement protocol,
+2) a baseline hypothesis,
+3) a numeric score,
+4) reproducible output artifacts,
+5) a reproducibility guide.
+
+Whenever possible, runs should follow the shared results contract:
+- `results/results_global.json`
+- `results/results_items.csv`
+See: `tools/results_contract.md`.
+
+Core modules:
+- Ringdown / CVN: `modules/ringdown/`
+- Rotation curves (RC V12): `modules/rotation-curves/`
+
+
 Unified Compressible Medium Theory (UCM-T) is treated not as a completed
 physical theory, but as an **operational research framework**
 focused on calibratable and reproducible testing.
