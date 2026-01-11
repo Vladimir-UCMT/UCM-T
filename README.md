@@ -11,6 +11,9 @@ Research hub for models, calibration pipelines, and reproducible benchmarks.
 - Modules: [`modules/`](modules/)  
   Domain-specific workspaces (e.g., rotation curves) with reproducibility links.
 
+  - Tools: [`tools/`](tools/)  
+  Reproducibility bundle template and cross-module results contract.
+
 This repository serves as a central coordination point for:
 - theoretical models based on the Unified Compressible Medium framework,
 - calibration pipelines across different physical domains,
