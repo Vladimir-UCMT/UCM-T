@@ -32,42 +32,46 @@ Data must be provided via:
 
 Canonical links to stable archives will be listed in: `links.md`.
 
-## How to run (current)
+## How to run (demo, from this repository)
 
-This module currently provides a pilot pipeline. The exact runner scripts may change while the
-benchmark is being frozen.
+Status: pilot. The demo dataset shipped in this repository is synthetic and intended only to verify
+that the pipeline runs end-to-end.
 
-Start from the module directory:
+From the repository root:
 
-- `modules/ringdown/`
+```bash
+python -X utf8 modules/ringdown/engine/core/pilot_cvn_rd.py --bench RD_DEMO_221 --tag DEMO --score model_nll --B 200 --root modules/ringdown
+Outputs are written under:
 
-Then follow the current run instructions referenced from the repository-level documentation and/or
-the runner scripts committed in this module when available.
+modules/ringdown/RUNS/
 
-If you are running from an external frozen bundle, follow the bundle’s `README` first and treat this
-file as a conceptual guide.
+Expected artifacts
 
-## Expected artifacts
+This pilot pipeline produces:
 
-Whenever possible, runs should emit artifacts compatible with the project-level results contract:
+modules/ringdown/RUNS/<bench>/<timestamp>_<bench>_<tag>/results_global.json
 
-- `results/results_global.json`
-- `results/results_items.csv`
+modules/ringdown/RUNS/<bench>/<timestamp>_<bench>_<tag>/results_event.csv
 
-See: `tools/results_contract.md`
+Whenever possible, future benchmark runs will also emit artifacts compatible with the shared results
+contract:
 
-Module-specific artifacts may also be produced (names may evolve during the pilot stage), e.g.:
-- per-event tables (CSV) with event-level scores or parameters,
-- diagnostic plots and log files.
+results/results_global.json
 
-## Validation (minimal)
+results/results_items.csv
 
-After a run completes:
-1) confirm that the expected artifacts exist (see above),
-2) confirm that the run declares its configuration (engine version, model variant, dataset tag),
-3) confirm that the summary metrics are consistent across repeated runs on the same input bundle.
+See: tools/results_contract.md
 
-Until the benchmark is frozen, numerical values are not guaranteed to match across commits.
+Validation (minimal)
+
+After a demo run completes:
+
+Confirm the two files above exist (results_global.json, results_event.csv).
+
+Confirm results_global.json records the run configuration (bench, tag, score, B and/or model id).
+
+Re-run the command on the same machine and confirm the summary statistics are stable within
+expected Monte-Carlo noise (pilot stage).
 
 ## Freezing policy (how this becomes “canonical”)
 
