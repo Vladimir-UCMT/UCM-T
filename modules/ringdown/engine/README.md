@@ -15,9 +15,9 @@ pip install -r requirements.txt
 
 ## Быстрый старт (Windows PowerShell)
 
-Из корня распакованной папки:
+Из корня:
 
-python -X utf8 engines/pilot_cvn_rd.py --bench RD_DEMO_221 --tag DEMO --score model_nll --B 200 --root .
+python -X utf8 modules/ringdown/engine/core/pilot_cvn_rd.py --bench RD_DEMO_221 --tag DEMO --score model_nll --B 200 --root modules/ringdown
 
 
 Результаты появятся в:
