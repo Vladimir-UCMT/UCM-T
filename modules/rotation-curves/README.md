@@ -2,9 +2,13 @@
 
 This module collects UCM-T related work on **galactic rotation curves**:
 models, calibration pipelines, and reproducible benchmarks.
-Reproducibility
+
+## Reproducibility
+
 The canonical reproducible benchmark for this module is **RC V12 (BENCH30 OUTER)**.
 See `reproducibility.md` for the exact reproduction procedure, expected outputs, and validation rules.
+Results contract
+Run outputs follow the project-level results contract: `tools/results_contract.md`.
 
 ## Scope
 
