@@ -8,6 +8,12 @@ Usage:
 
 No pandas required.
 """
+# UCM-T Rotation Curves Utilities
+# RC V12 (BENCH30 OUTER) — reference helper script
+#
+# Canonical reproducible bundle is archived on Zenodo:
+# https://doi.org/10.5281/zenodo.18213329
+
 from __future__ import annotations
 import csv
 import math
