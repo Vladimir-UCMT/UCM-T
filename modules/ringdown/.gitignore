@@ -1,0 +1,6 @@
+RUNS/
+results/
+*.log
+*.png
+*.pdf
+__pycache__/
