@@ -1,6 +1,10 @@
 ### Expected behavior
 The script runs the engine over the BENCH30 OUTER set.  
 All outputs are written to the `results/` directory.
+Note
+This benchmark is executed from the canonical Zenodo bundle.
+The engine code in this GitHub repository is provided for reference and inspection
+and is not intended to be run standalone from this repository.
 
 ## Validation
 After the run completes, verify that the following files exist in `results/`:
