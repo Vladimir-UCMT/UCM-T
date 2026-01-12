@@ -1,0 +1,3 @@
+rin_S150914_pyring_Kerr_221_domega_dtau_221_0M_ft
+rin_S170104_pyring_Kerr_221_domega_dtau_221_0M_ft
+rin_S170814_pyring_Kerr_221_domega_dtau_221_0M_ft
