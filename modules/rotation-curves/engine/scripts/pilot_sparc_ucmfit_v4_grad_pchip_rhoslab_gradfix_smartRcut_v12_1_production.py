@@ -24,6 +24,11 @@ Requirements:
   - Your UCM engine script: ucm_rotation_curve_2d_sparse_v3_7_2_fixed.py must be
     in the SAME directory as this file, or importable on PYTHONPATH.
 """
+# UCM-T Rotation Curves Benchmark Runner
+# RC V12 (BENCH30 OUTER) — frozen reference runner script
+#
+# Canonical reproducible bundle (code + data + reference outputs) is archived on Zenodo:
+# https://doi.org/10.5281/zenodo.18213329
 
 from __future__ import annotations
 import argparse
