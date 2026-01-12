@@ -26,6 +26,14 @@
 #   - nu ~ (0.06..0.12)*dR^2
 #   - nsl_mid = 3..7 (only for midline-avg extraction)
 # =============================================================================
+# UCM-T Rotation Curves Engine
+# Frozen reference implementation for RC V12 (BENCH30 OUTER)
+#
+# Canonical reproducible bundle (code + data + runners) is archived on Zenodo:
+# https://doi.org/10.5281/zenodo.18213329
+#
+# This file is provided for transparency and inspection.
+# Development and experiments should be done in separate files/branches.
 
 import numpy as np
 import matplotlib.pyplot as plt
