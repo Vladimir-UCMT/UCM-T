@@ -9,6 +9,12 @@ for any UCM-T module.
 
 **(Example)** UCM-T — <ModuleName> Reproducibility Bundle (vX.Y)
 
+## Example (Rotation Curves)
+
+- RC V12 (BENCH30 OUTER) — canonical bundle: https://doi.org/10.5281/zenodo.18213329
+- Reference engine code (for inspection): `modules/rotation-curves/engine/`
+
+
 ## Abstract (short)
 
 1–2 paragraphs describing:
