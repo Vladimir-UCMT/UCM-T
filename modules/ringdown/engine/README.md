@@ -23,6 +23,7 @@ python -X utf8 modules/ringdown/engine/core/pilot_cvn_rd.py --bench RD_DEMO_221 
 Результаты появятся в:
 - `.\RUNS\RD_DEMO_221\<timestamp>_RD_DEMO_221_DEMO\results_global.json`
 - `.\RUNS\RD_DEMO_221\<timestamp>_RD_DEMO_221_DEMO\results_event.csv`
+Also emits results/ artifacts compatible with tools/results_contract.md.
 
 ## Структура
 
@@ -34,5 +35,4 @@ python -X utf8 modules/ringdown/engine/core/pilot_cvn_rd.py --bench RD_DEMO_221 
 Для реального анализа замените их на ваши CSV/выгрузки из H5 (с колонками `delta_f`, `delta_tau`, и по возможности `mf_solar`, `final_spin`).
 
 ## Лицензия
-
 
