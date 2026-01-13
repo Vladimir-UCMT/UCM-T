@@ -107,7 +107,7 @@ def read_global_json(path: Path) -> Tuple[Optional[Dict[str, Any]], Optional[str
     if not path.exists():
         return None, None, [], f"Missing results_global.json at {path}"
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
     except json.JSONDecodeError as exc:
         return None, None, [], f"Failed to parse JSON ({path}): {exc}"
     if not isinstance(data, dict):
