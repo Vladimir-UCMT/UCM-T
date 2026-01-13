@@ -16,6 +16,7 @@ import platform
 import statistics
 import sys
 import re
+import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1038,6 +1039,12 @@ def main():
 
     # results_global.json
     (run_dir / "results_global.json").write_text(json.dumps(global_out, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    # results contract artifacts
+    results_dir = run_dir / "results"
+    results_dir.mkdir(exist_ok=True)
+    shutil.copy2(run_dir / "results_global.json", results_dir / "results_global.json")
+    shutil.copy2(ev_csv, results_dir / "results_items.csv")
 
     # manifest
     write_manifest(run_dir / "_manifest.json", cfg, inputs={
