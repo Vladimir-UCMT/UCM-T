@@ -9,7 +9,6 @@
 *.cff text eol=lf
 *.toml text eol=lf
 *.json text eol=lf
-*.csv text eol=lf
 *.tsv text eol=lf
 *.py  text eol=lf
 *.ps1 text eol=lf
@@ -26,3 +25,4 @@
 *.h5 binary
 *.hdf5 binary
 *.npz binary
+modules/ringdown/data/cvn/posteriors_csv/*.csv text eol=lf
