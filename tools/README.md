@@ -21,6 +21,7 @@ results/
 
 If the `results/` folder is missing, the comparator falls back to legacy root-level
 files (`results_global.json`, `results_items.csv`) and reports a warning.
+The comparator accepts `results_global.json` with or without a UTF-8 BOM.
 
 ### Validate a single run
 
