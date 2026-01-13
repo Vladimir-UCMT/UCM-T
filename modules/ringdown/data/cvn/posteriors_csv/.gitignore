@@ -1,0 +1,3 @@
+# Ignore posterior CSVs (large data) but keep placeholders
+*.csv
+!.gitkeep

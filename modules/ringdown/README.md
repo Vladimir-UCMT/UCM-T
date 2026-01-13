@@ -20,6 +20,9 @@ Whenever possible, run outputs should follow: `tools/results_contract.md`.
 
 Large posterior samples, event archives, and full run outputs must not be committed to Git.
 Use external archives (e.g., Zenodo) and provide persistent links.
+Posterior CSVs used by the CVN pipeline should be placed locally in
+`modules/ringdown/data/cvn/posteriors_csv/` (kept out of Git and fetched from
+reproducibility bundles or releases as needed).
 
 ## Status
 
