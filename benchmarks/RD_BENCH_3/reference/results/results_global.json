@@ -1,0 +1,37 @@
+{
+  "bench": "RD_REAL_221",
+  "mode": "fast",
+  "score_type": "model_nll",
+  "model": "ucm",
+  "model_params": {
+    "f0": 240,
+    "kf": 0.7,
+    "kt": 0.0,
+    "df_clip": 0.12,
+    "dt_clip": 0.12,
+    "qnm_mode": "221"
+  },
+  "N_events": 3,
+  "delta_f_hat": -0.00056861659,
+  "delta_tau_hat": -0.0016715127833333346,
+  "delta_f_ci": {
+    "q05": -0.008227980590000001,
+    "q50": -0.00056861659,
+    "q95": 0.007090747410000001
+  },
+  "delta_tau_ci": {
+    "q05": -0.01174579545,
+    "q50": -0.0016715127833333346,
+    "q95": 0.008402769883333333
+  },
+  "baseline_const": null,
+  "baseline_metrics": null,
+  "model_metrics": {
+    "nll_sum": -9.003926749956316,
+    "nll_sum_w": -9.003926749956316,
+    "zmax": 4.344158627530806,
+    "events_used": 3,
+    "ucm_clip_df": 1,
+    "ucm_clip_dt": 0
+  }
+}
