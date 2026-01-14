@@ -17,6 +17,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 ID_CANDIDATES = ["event_id", "galaxy", "item_id", "item", "name", "id"]
 NULL_TOKENS = {"", "nan", "null", "none", "na"}
+ZERO_WIDTH_PREFIX = "\ufeff\u200b\u200c\u200d\u2060"
 
 
 @dataclass
@@ -122,13 +123,23 @@ def read_items_csv(path: Path) -> Tuple[List[Dict[str, str]], List[str], Optiona
         return [], [], f"Missing results_items.csv at {path}"
     try:
         with path.open("r", encoding="utf-8", newline="") as handle:
-            reader = csv.DictReader(handle)
-            if reader.fieldnames is None:
+            reader = csv.reader(handle)
+            try:
+                raw_fieldnames = next(reader)
+            except StopIteration:
                 return [], [], f"CSV missing header row ({path})"
-            rows = [dict(row) for row in reader]
+            fieldnames = [normalize_header_name(name) for name in raw_fieldnames]
+            dict_reader = csv.DictReader(handle, fieldnames=fieldnames)
+            rows = [dict(row) for row in dict_reader]
     except csv.Error as exc:
         return [], [], f"CSV parse error ({path}): {exc}"
-    return rows, list(reader.fieldnames or []), None
+    return rows, fieldnames, None
+
+
+def normalize_header_name(name: Optional[str]) -> str:
+    if name is None:
+        return ""
+    return str(name).lstrip(ZERO_WIDTH_PREFIX)
 
 
 def choose_id_column(columns: Iterable[str]) -> Optional[str]:
