@@ -205,3 +205,19 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# local runs / comparisons / notes
+RD_BENCH_3_NEW/
+bench3_ref_vs_new.md
+RD_BENCH_3-RD_BENCH_3_NEW-*.txt
+
+# ringdown local data (generated / copied)
+modules/ringdown/data/cvn/events.csv
+
+modules/ringdown/bench/RD_BENCH_3.txt
+modules/ringdown/bench/RD_BENCH_3_NEW.txt
+
+# local runs / outputs
+runs/
+nv_demo.csv
+
