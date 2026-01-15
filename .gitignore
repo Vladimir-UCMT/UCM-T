@@ -214,3 +214,6 @@ RD_BENCH_3-RD_BENCH_3_NEW-*.txt
 # ringdown local data (generated / copied)
 modules/ringdown/data/cvn/events.csv
 
+modules/ringdown/bench/RD_BENCH_3.txt
+modules/ringdown/bench/RD_BENCH_3_NEW.txt
+
