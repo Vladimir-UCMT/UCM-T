@@ -55,6 +55,26 @@ def main() -> int:
 
     # Load module to ensure it imports cleanly
     engine_mod = load_engine_module(ENGINE_PATH)
+    # Minimal real metric (deterministic smoke)
+    # NOTE: units/meaning depend on casimir_ucm.py definitions; this is just a pipeline sanity check.
+    try:
+        # Deterministic smoke parameters (dimensionless placeholders)
+        L = 1.0
+        N = 200
+        rho = 1.0
+        kappa = 1.0
+
+        E = engine_mod.casimir_energy(L, N, rho, kappa)
+        F = engine_mod.casimir_force(L, N, rho, kappa)
+        status = "ok"
+        note2 = f"Computed Casimir on L={L}, N={N}, rho={rho}, kappa={kappa}."
+
+    except TypeError:
+        # If signature differs, keep wrapper alive; we'll adjust after inspecting signatures.
+        F = None
+        E = None
+        status = "needs_wiring"
+        note2 = "Casimir functions loaded, but argument signature mismatch; adjust wrapper to correct signature."
 
     global_payload = {
         "schema": "ucm_results_contract_v1",
@@ -63,15 +83,23 @@ def main() -> int:
         "engine_path": os.path.relpath(ENGINE_PATH, Path.cwd()),
         "tag": args.tag,
         "created_utc": datetime.now(timezone.utc).isoformat(),
-        "status": "ok",
-        "notes": "Smoke wrapper: contract files created; real Casimir metrics wiring pending.",
+        "status": status,
+        "notes": "Casimir wrapper: contract files created. " + note2,
         "metrics": {
-            "items_count": 0,
+            "items_count": 1 if F is not None else 0,
+            "casimir_force_smoke": F,
+            "casimir_energy_smoke": E,
         },
     }
-
     write_results_global(results_dir, global_payload)
-    write_results_items(results_dir, rows=[])
+
+    rows = []
+    if F is not None:
+        rows.append({"item_id": "SMOKE", "metric": "casimir_force_smoke", "value": F})
+    if E is not None:
+        rows.append({"item_id": "SMOKE", "metric": "casimir_energy_smoke", "value": E})
+
+    write_results_items(results_dir, rows=rows)
 
     print(f"[done] wrote: {results_dir / 'results_global.json'}")
     print(f"[done] wrote: {results_dir / 'results_items.csv'}")
