@@ -5,6 +5,8 @@ import argparse
 import csv
 import json
 import os
+import subprocess
+
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -46,42 +48,57 @@ def write_results_items(results_dir: Path, rows: list[dict]) -> None:
         for r in rows:
             w.writerow(r)
 
-
 def main() -> int:
     ap = argparse.ArgumentParser(description="UCM-T NV engine wrapper (results contract output).")
     ap.add_argument("--outdir", required=True, help="Run output directory (will create results/ inside).")
-    ap.add_argument("--tag", default="NV_WRAPPER_SMOKE", help="Run tag/name for bookkeeping.")
+    ap.add_argument("--tag", default="NV_WRAPPER_DEMO", help="Run tag/name for bookkeeping.")
     args = ap.parse_args()
 
     outdir = Path(args.outdir).resolve()
     outdir.mkdir(parents=True, exist_ok=True)
     results_dir = ensure_results_dir(outdir)
 
-    # For Step 1: smoke wrapper that produces contract outputs.
-    # We will wire real NV calculations in the next step once we confirm expected CLI/inputs.
-    engine_mod = load_engine_module(ENGINE_PATH)
+    # Load module (sanity: file exists & imports)
+    _ = load_engine_module(ENGINE_PATH)
+
+    # Run NV-engine in demo mode (no CSV)
+    cmd = ["python", str(ENGINE_PATH), "--no-plots"]
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+
+    stdout_tail = "\n".join(proc.stdout.splitlines()[-20:])
+    stderr_tail = "\n".join(proc.stderr.splitlines()[-20:])
+    status = "ok" if proc.returncode == 0 else "error"
 
     global_payload = {
         "schema": "ucm_results_contract_v1",
         "module": "nv",
         "engine": "nv_engine_v023.py",
         "engine_path": os.path.relpath(ENGINE_PATH, Path.cwd()),
-
         "tag": args.tag,
         "created_utc": datetime.now(timezone.utc).isoformat(),
-        "status": "ok",
-        "notes": "Smoke wrapper: contract files created; real NV metrics wiring pending.",
+        "status": status,
+        "notes": "NV demo run executed via subprocess.",
         "metrics": {
-            "items_count": 0,
+            "items_count": 1,
+            "return_code": proc.returncode,
         },
+        "stdout_tail": stdout_tail,
+        "stderr_tail": stderr_tail,
     }
 
     write_results_global(results_dir, global_payload)
-    write_results_items(results_dir, rows=[])
+
+    rows = [{
+        "item_id": "DEMO",
+        "metric": "nv_demo_return_code",
+        "value": proc.returncode,
+    }]
+    write_results_items(results_dir, rows=rows)
 
     print(f"[done] wrote: {results_dir / 'results_global.json'}")
     print(f"[done] wrote: {results_dir / 'results_items.csv'}")
-    return 0
+    return proc.returncode
+
 
 
 if __name__ == "__main__":
