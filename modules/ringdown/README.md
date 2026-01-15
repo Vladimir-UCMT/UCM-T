@@ -66,3 +66,43 @@ which will:
 - allow inclusion in multi-domain calibration runs
 
 No changes to the underlying physics engine are required.
+
+
+---
+
+## Вставка (EN)
+
+```md
+## Calibration pipeline integration (CALIB)
+
+The Ringdown module is integrated into the global calibration run via a thin adapter:
+`modules/ringdown/pilot_rd.py`.
+
+### What `pilot_rd.py` does (minimal scope)
+- accepts `--outdir`
+- runs the RD benchmark (default: `RD_BENCH_3_NEW`)
+- publishes outputs using the UCM Results Contract layout:
+
+<outdir>/
+results/
+results_global.json
+results_items.csv
+wrapper_status.json
+
+
+`wrapper_status.json` is an adapter diagnostic artifact (not part of the contract). It includes
+`published_from`, the original RD run directory used to publish the results.
+
+### Manual run (PowerShell)
+From the repository root:
+
+```powershell
+cd C:\UCM\UCM-T
+python -X utf8 modules/ringdown/pilot_rd.py --outdir C:\UCM\UCM-T\_TMP\RINGDOWN
+
+Publish-only mode (no recomputation):
+python -X utf8 modules/ringdown/pilot_rd.py --outdir C:\UCM\UCM-T\_TMP\RINGDOWN --no-run
+Robustness
+
+The adapter must not break the calibration pipeline. On failure it still creates <outdir>/results/
+and writes results_global.json with status="error" and a short error description.

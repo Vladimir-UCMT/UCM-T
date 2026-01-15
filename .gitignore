@@ -221,3 +221,7 @@ modules/ringdown/bench/RD_BENCH_3_NEW.txt
 runs/
 nv_demo.csv
 
+
+# local scratch
+_TMP/
+
