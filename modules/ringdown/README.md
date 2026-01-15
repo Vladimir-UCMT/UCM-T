@@ -1,37 +1,68 @@
 # Ringdown Module
 
-This module collects UCM-T related work on **ringdown signals** of compact objects:
-models, inference pipelines, and reproducible benchmarks.
+This module contains tools for **ringdown modeling and inference**
+within the UCM-T framework.
 
-## Reproducibility
+The focus of the module is the analysis of compact-object ringdown signals,
+including benchmark runs and real-event pipelines.
 
-Reproducible benchmarks for this module are under active development.
-Links to stable reproduction bundles and procedures will be provided here.
-Results contract
-Whenever possible, run outputs should follow: `tools/results_contract.md`.
+---
 
-## Scope
+## Structure
 
-- Operational modeling of ringdown physics within the UCM-T framework
-- Parameter inference and comparative tests against public GW catalogs where applicable
-- Reproducible benchmark runs and result packaging conventions
+ringdown/
+engine/
+core/
+pilot_cvn_rd.py
+...
+bench/
+RD_BENCH_3.txt
+RD_BENCH_3_NEW.txt
+data/
+cvn/
+...
+README.md
 
-## Data policy
+yaml
+Копировать код
 
-Large posterior samples, event archives, and full run outputs must not be committed to Git.
-Use external archives (e.g., Zenodo) and provide persistent links.
-Posterior CSVs used by the CVN pipeline should be placed locally in
-`modules/ringdown/data/cvn/posteriors_csv/` (kept out of Git and fetched from
-reproducibility bundles or releases as needed).
+- `engine/`  
+  Contains the core ringdown physics and inference code.
+  This is the primary scientific implementation and may evolve independently.
 
-## Status
+- `bench/`  
+  Local benchmark notes and comparison artifacts.
+  These files are **not part of the calibration pipeline** and are ignored by git.
 
-Bootstrap stage.
-This folder currently provides a stable entry point for future additions:
-documentation, helper scripts, and links to external reproducibility bundles.
+- `data/`  
+  Small reference datasets required for local testing.
+  Full datasets and outputs are hosted externally.
 
-## Planned contents (non-binding)
+---
 
-- `links.md` — persistent links to datasets / Zenodo bundles / releases
-- `runs/` — small demo artifacts only (full results archived externally)
-- `tools/` — helpers specific to ringdown benchmarking and reporting
+## Current status
+
+- Ringdown engine is **operational and validated**
+- Benchmark runs and reference comparisons exist
+- Partial results contract support is implemented
+
+---
+
+## Pipeline integration
+
+At present, the ringdown module is **not yet connected**
+to the unified calibration launcher.
+
+Planned integration will introduce a lightweight adapter:
+
+pilot_rd.py
+
+arduino
+Копировать код
+
+which will:
+- run selected ringdown scenarios
+- export results using the standard UCM-T results contract
+- allow inclusion in multi-domain calibration runs
+
+No changes to the underlying physics engine are required.
