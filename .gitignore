@@ -217,3 +217,7 @@ modules/ringdown/data/cvn/events.csv
 modules/ringdown/bench/RD_BENCH_3.txt
 modules/ringdown/bench/RD_BENCH_3_NEW.txt
 
+# local runs / outputs
+runs/
+nv_demo.csv
+
