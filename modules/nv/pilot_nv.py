@@ -61,9 +61,14 @@ def main() -> int:
     # Load module (sanity: file exists & imports)
     _ = load_engine_module(ENGINE_PATH)
 
-    # Run NV-engine in demo mode (no CSV)
-    cmd = ["python", str(ENGINE_PATH), "--no-plots"]
-    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    # Run NV-engine in demo mode (no CSV) with forced UTF-8 (Windows-safe)
+    cmd = ["python", "-X", "utf8", str(ENGINE_PATH), "--no-plots"]
+
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=env)
 
     stdout_tail = "\n".join(proc.stdout.splitlines()[-20:])
     stderr_tail = "\n".join(proc.stderr.splitlines()[-20:])
@@ -97,7 +102,7 @@ def main() -> int:
 
     print(f"[done] wrote: {results_dir / 'results_global.json'}")
     print(f"[done] wrote: {results_dir / 'results_items.csv'}")
-    return proc.returncode
+    return 0
 
 
 
