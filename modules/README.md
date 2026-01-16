@@ -31,14 +31,10 @@ Each module exposes a **pilot adapter** that:
 Path:
 modules/rotation-curves/
 
-makefile
-Копировать код
 
 Adapter:
 modules/rotation-curves/pilot_rc.py
 
-yaml
-Копировать код
 
 Status:
 - ✅ Integrated into calibration pipeline
@@ -56,14 +52,10 @@ Notes:
 Path:
 modules/ringdown/
 
-makefile
-Копировать код
 
 Adapter:
 modules/ringdown/pilot_rd.py
 
-yaml
-Копировать код
 
 Status:
 - ✅ Integrated into calibration pipeline
@@ -81,8 +73,6 @@ Notes:
 Path:
 modules/nv/
 
-yaml
-Копировать код
 
 Status:
 - ✅ Integrated (pilot adapter present)
@@ -94,8 +84,6 @@ Status:
 Path:
 modules/casimir/
 
-yaml
-Копировать код
 
 Status:
 - ✅ Integrated (pilot adapter present)
@@ -111,17 +99,12 @@ Each module writes:
 ├─ results_global.json
 └─ results_items.csv
 
-markdown
-Копировать код
 
 Design principles:
 - `results_items.csv` **always contains at least one numeric metric**
 - On failure, `status="error"` is written instead of raising exceptions
 - Contracts are validated with:
 tools/compare_results_contract.py
-
-yaml
-Копировать код
 
 ---
 
@@ -131,6 +114,7 @@ yaml
 - All modules pass contract validation
 - Calibration pipeline is stable and reproducible
 - Next step: introduce a unified launcher (`run_calib_all.py`)
+
 - **Rotation Curves** — [`modules/rotation-curves/`](rotation-curves/)  
   Galactic rotation curves: calibration pipelines, benchmarks, and external datasets.
 
@@ -155,3 +139,37 @@ engine/ # domain physics code (no pipeline logic)
 pilot_*.py # lightweight wrapper for the calibration pipeline
 README.md # scope, status, and usage notes
 links.md # external persistent resources (Zenodo, releases)
+
+Unified calibration launcher
+
+All integrated calibration modules can be executed with a single command.
+
+Run all modules:
+
+python -X utf8 tools/run_calib_all.py --outdir <OUTDIR>
+
+
+This sequentially runs:
+
+NV (ODMR)
+
+Casimir
+
+Rotation Curves (RC)
+
+Ringdown (RD)
+
+Each module writes its own results contract to:
+
+<OUTDIR>/<module>/results/
+
+
+A global summary is written to:
+
+<OUTDIR>/calib_summary.json
+<OUTDIR>/calib_summary.csv
+
+
+Publish-only mode for Ringdown (skip engine run):
+
+python -X utf8 tools/run_calib_all.py --outdir <OUTDIR> --rd-no-run
