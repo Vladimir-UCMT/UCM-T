@@ -21,6 +21,7 @@ import csv
 import json
 import subprocess
 import sys
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -54,6 +55,18 @@ def write_error_contract(outdir: Path, error: str, stdout_tail: str):
         w.writerow(["item_id", "status", "score", "metric_value", "summary"])
         w.writerow(["GLOBAL", "error", "", 0.0, error])
 
+def write_wrapper_status(results_dir: Path, status: str, error: str = "", published_from: str = "") -> None:
+    results_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema": "ucm_wrapper_status_v1",
+        "status": status,
+        "error": error,
+        "published_from": published_from,
+    }
+    (results_dir / "wrapper_status.json").write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
 
 def main():
     ap = argparse.ArgumentParser()
@@ -61,12 +74,13 @@ def main():
     args = ap.parse_args()
 
     outdir = Path(args.outdir).resolve()
-    work = outdir / "_work_rc"
-    run_dir = work / "run"
-    results = outdir / "results"
 
-    run_dir.mkdir(parents=True, exist_ok=True)
-    results.mkdir(parents=True, exist_ok=True)
+    # ВАЖНО: outdir УЖЕ указывает на .../<run>/<module>/ (например .../CALIB.../rc)
+    rc_dir = outdir
+    results_dir = rc_dir / "results"
+    work_dir = rc_dir / "_work_rc"
+    run_dir = work_dir / "run"
+    sparc_dir = work_dir / "sparc_rotmod"
 
     repo = Path(__file__).resolve().parents[2]
 
@@ -84,8 +98,10 @@ def main():
         / "modules"
         / "rotation-curves"
         / "engine"
-        / "ucm_rotation_curve_2d_sparse_BASE.py"
+        / "core"
+        / "ucm_rotation_curve_2d_sparse_BASE_grad_pchip.py"
     )
+
 
     if not runner.exists():
         write_error_contract(outdir, f"Runner not found: {runner}", "")
@@ -107,29 +123,33 @@ def main():
         "--out",
         str(run_dir),
         "--sparc-dir",
-        str(work / "sparc_rotmod"),
+        str(work_dir / "sparc_rotmod"),
     ]
 
     proc = subprocess.run(
         cmd,
         cwd=str(repo),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        capture_output=True,
         text=True,
-        encoding="utf-8",
-        errors="replace",
     )
 
-    stdout_tail = proc.stdout[-8000:] if proc.stdout else ""
+    # всегда сохраняем логи
+    (outdir / "rc").mkdir(parents=True, exist_ok=True)
+    (rc_dir / "stdout.txt").write_text(proc.stdout or "", encoding="utf-8")
+    (rc_dir / "stderr.txt").write_text(proc.stderr or "", encoding="utf-8")
 
-    pilot_csv = run_dir / "pilot_results.csv"
-    if not pilot_csv.exists():
-        write_error_contract(
-            outdir,
-            f"pilot_results.csv not produced by runner",
-            stdout_tail,
-        )
-        return 0
+    if proc.returncode != 0:
+        # публикуем error + контракт
+        err_tail = (proc.stderr or proc.stdout or "").splitlines()[-40:]
+        err_msg = "\n".join(err_tail) if err_tail else f"Engine failed with return code {proc.returncode}"
+        write_error_contract(results, error=err_msg)
+        write_wrapper_status(results, status="error", error=err_msg, published_from="results_global.json")
+        return 1
+ 
+    # успех
+    write_wrapper_status(results_dir, status="ok", error="", published_from="results_global.json")
+    return 0
+
 
     # ===== SUCCESS PATH =====
 
@@ -169,9 +189,66 @@ def main():
         ),
         encoding="utf-8",
     )
+    write_wrapper_status(results, status="error", error=error, published_from="results_global.json")
+
 
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        rc = main()
+    except Exception as e:
+        # Последний рубеж: пишем error-contract в ожидаемое место
+        # ВАЖНО: outdir у RC — это .../RUN/.../rc
+        outdir = None
+        try:
+            # грубо парсим --outdir из argv (чтобы не зависеть от argparse)
+            argv = sys.argv
+            if "--outdir" in argv:
+                outdir = Path(argv[argv.index("--outdir") + 1]).resolve()
+        except Exception:
+            outdir = None
+
+        if outdir is not None:
+            results_dir = outdir / "results"
+            results_dir.mkdir(parents=True, exist_ok=True)
+            err = f"pilot_rc.py crashed: {e}\n\nTRACEBACK:\n{traceback.format_exc()}"
+            # Эти функции у тебя уже должны существовать выше в файле:
+            # write_error_contract(results_dir, error=..., returncode=..., stdout_tail=..., stderr_tail=...)
+            # write_wrapper_status(results_dir, status=..., error=..., published_from=...)
+            try:
+                # results_global.json
+                (results_dir / "results_global.json").write_text(
+                    json.dumps(
+                        {
+                            "module": "modules/rotation-curves",
+                            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                            "status": "error",
+                            "engine_returncode": 1,
+                            "error": err,
+                        },
+                        indent=2,
+                        ensure_ascii=False,
+                    ) + "\n",
+                    encoding="utf-8",
+                )
+
+                # results_items.csv (минимальный контракт)
+                (results_dir / "results_items.csv").write_text(
+                    "item_id,status,score,metric_value,summary\n"
+                    f"GLOBAL,error,,0.0,{str(e).replace(',', ';')}\n",
+                    encoding="utf-8",
+                )
+            except Exception:
+                pass
+
+            try:
+                write_wrapper_status(results_dir, status="error", error=str(e), published_from="pilot_rc.py")
+            except Exception:
+                pass
+
+        rc = 0  # не валим весь конвейер исключением
+
+    sys.exit(rc)
+
