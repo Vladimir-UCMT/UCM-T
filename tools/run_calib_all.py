@@ -35,11 +35,17 @@ def repo_root() -> Path:
     # tools/run_calib_all.py -> parents[1] = repo root
     return Path(__file__).resolve().parents[1]
 
+ENGINE_CHECKS: dict[str, list[str]] = {
+    "rc": [
+        "modules/rotation-curves/engine/scripts/pilot_sparc_ucmfit_v4_grad_pchip_rhoslab_gradfix_smartRcut_v12_1_production.py",
+        "modules/rotation-curves/engine/core/ucm_rotation_curve_2d_sparse_BASE_grad_pchip.py",
+    ],
+}
 
 def read_json(p: Path) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
-def run_one(name: str, script_rel: str, outdir: Path, extra_args: list[str], dry_run: bool = False) -> dict:
+def run_one(name: str, script_rel: str, outdir: Path, extra_args: list[str], dry_run: bool = False, check_engines: bool = False) -> dict:
     rr = repo_root()
     script = rr / script_rel
     module_out = outdir / name
@@ -48,7 +54,7 @@ def run_one(name: str, script_rel: str, outdir: Path, extra_args: list[str], dry
 
     cmd = [sys.executable, "-X", "utf8", str(script), "--outdir", str(module_out)] + extra_args
     # dry-run: do not execute anything, only verify pilot path and prepare folders
-    if dry_run:
+    if dry_run or check_engines:
         gpath = module_out / "results" / "results_global.json"
         ipath = module_out / "results" / "results_items.csv"
         wpath = module_out / "results" / "wrapper_status.json"
@@ -145,6 +151,16 @@ def main() -> int:
         action="store_true",
         help="Do not run engines; only check pilot script existence and create folder structure.",
     )
+    ap.add_argument(
+    "--check-engines",
+    action="store_true",
+    help="Do not run engines; also check existence of key engine/runner files (currently RC).",
+    )
+
+    action="store_true",
+    help="Do not run engines; also check existence of key engine/runner files (currently RC).",
+
+
     args = ap.parse_args()
 
     outdir = Path(args.outdir).resolve()
@@ -174,7 +190,7 @@ def main() -> int:
                 "outdir": str(outdir / name),
             })
             continue
-        results.append(run_one(name, script, outdir, extra, dry_run=args.dry_run))
+        results.append(run_one(name, script, outdir, extra, dry_run=args.dry_run, check_engines=args.check_engines))
 
     # Write summary JSON/CSV at root
     (outdir / "calib_summary.json").write_text(
