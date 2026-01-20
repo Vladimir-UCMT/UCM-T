@@ -33,9 +33,21 @@ def write_results_global(results_dir: Path, payload: dict) -> None:
     p.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def write_wrapper_status(results_dir: Path, status: str, error: str, published_from: str) -> None:
+    p = results_dir / "wrapper_status.json"
+    payload = {
+        "schema": "ucm_wrapper_status_v1",
+        "status": status,
+        "error": error,
+        "published_from": published_from,
+    }
+    p.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
 def write_results_items(results_dir: Path, rows: list[dict]) -> None:
     p = results_dir / "results_items.csv"
-    fieldnames = sorted({k for r in rows for k in r.keys()}) if rows else ["item_id", "metric", "value"]
+    # Keep stable contract columns; do not auto-vary.
+    fieldnames = ["item_id", "status", "score", "metric_value", "summary"]
     with p.open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
@@ -53,53 +65,111 @@ def main() -> int:
     outdir.mkdir(parents=True, exist_ok=True)
     results_dir = ensure_results_dir(outdir)
 
-    # Load module to ensure it imports cleanly
-    engine_mod = load_engine_module(ENGINE_PATH)
-    # Minimal real metric (deterministic smoke)
-    # NOTE: units/meaning depend on casimir_ucm.py definitions; this is just a pipeline sanity check.
+    # Defaults (so we can always publish something)
+    F = None
+    E = None
+    status = "error"
+    note2 = ""
+    error_msg = ""
+
     try:
-        # Deterministic smoke parameters (dimensionless placeholders)
+        # Load module to ensure it imports cleanly
+        engine_mod = load_engine_module(ENGINE_PATH)
+
+        # Deterministic smoke parameters (placeholders)
         L = 1.0
         N = 200
         rho = 1.0
         kappa = 1.0
 
-        E = engine_mod.casimir_energy(L, N, rho, kappa)
-        F = engine_mod.casimir_force(L, N, rho, kappa)
-        status = "ok"
-        note2 = f"Computed Casimir on L={L}, N={N}, rho={rho}, kappa={kappa}."
+        try:
+            E = engine_mod.casimir_energy(L, N, rho, kappa)
+            F = engine_mod.casimir_force(L, N, rho, kappa)
+            status = "ok"
+            note2 = f"Computed Casimir on L={L}, N={N}, rho={rho}, kappa={kappa}."
+        except TypeError as e:
+            # Signature mismatch (engine functions exist but arguments differ)
+            status = "needs_wiring"
+            error_msg = f"TypeError: {e}"
+            note2 = "Casimir functions loaded, but argument signature mismatch; adjust wrapper to correct signature."
 
-    except TypeError:
-        # If signature differs, keep wrapper alive; we'll adjust after inspecting signatures.
-        F = None
-        E = None
-        status = "needs_wiring"
-        note2 = "Casimir functions loaded, but argument signature mismatch; adjust wrapper to correct signature."
+    except Exception as e:
+        status = "error"
+        error_msg = f"{type(e).__name__}: {e}"
+        note2 = "Casimir wrapper failed before compute."
+
+    # n_items must be defined for all branches
+    n_items = 0
+    if F is not None:
+        n_items += 1
+    if E is not None:
+        n_items += 1
+    if n_items == 0:
+        n_items = 1  # ensure contract indicates at least one item row
 
     global_payload = {
         "schema": "ucm_results_contract_v1",
         "module": "casimir",
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "status": "ok" if status == "ok" else "error",
+        "engine_returncode": 0 if status == "ok" else 1,
+        "n_items": n_items,
         "engine": "casimir_ucm.py",
         "engine_path": os.path.relpath(ENGINE_PATH, Path.cwd()),
         "tag": args.tag,
-        "created_utc": datetime.now(timezone.utc).isoformat(),
-        "status": status,
         "notes": "Casimir wrapper: contract files created. " + note2,
         "metrics": {
-            "items_count": 1 if F is not None else 0,
             "casimir_force_smoke": F,
             "casimir_energy_smoke": E,
         },
     }
-    write_results_global(results_dir, global_payload)
+    if error_msg:
+        global_payload["error"] = error_msg
 
-    rows = []
+    # Build contract rows: must have at least 1 row and numeric metric_value somewhere
+    rows: list[dict] = []
     if F is not None:
-        rows.append({"item_id": "SMOKE", "metric": "casimir_force_smoke", "value": F})
+        rows.append(
+            {
+                "item_id": "SMOKE",
+                "status": "ok",
+                "score": 1.0,
+                "metric_value": float(F),
+                "summary": "Casimir force (smoke)",
+            }
+        )
     if E is not None:
-        rows.append({"item_id": "SMOKE", "metric": "casimir_energy_smoke", "value": E})
+        rows.append(
+            {
+                "item_id": "SMOKE_E",
+                "status": "ok",
+                "score": 1.0,
+                "metric_value": float(E),
+                "summary": "Casimir energy (smoke)",
+            }
+        )
 
+    if not rows:
+        # Fallback row to satisfy contract
+        rows = [
+            {
+                "item_id": "SMOKE",
+                "status": "fail",
+                "score": 0.0,
+                "metric_value": 0.0,
+                "summary": error_msg or "Casimir wrapper produced no metrics (needs wiring).",
+            }
+        ]
+
+    # Publish (global + items) then wrapper status
+    write_results_global(results_dir, global_payload)
     write_results_items(results_dir, rows=rows)
+    write_wrapper_status(
+        results_dir,
+        status="ok" if status == "ok" else "error",
+        error="" if status == "ok" else (error_msg or "Casimir wrapper error"),
+        published_from="results_global.json",
+    )
 
     print(f"[done] wrote: {results_dir / 'results_global.json'}")
     print(f"[done] wrote: {results_dir / 'results_items.csv'}")
