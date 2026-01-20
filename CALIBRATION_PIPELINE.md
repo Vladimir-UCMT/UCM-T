@@ -1,8 +1,9 @@
-
-# UCM-T Calibration Pipeline (v1)
+# UCM-T Calibration Pipeline (v2)
 
 This repo contains a unified calibration pipeline that runs multiple domain modules
 (NV, Casimir, Rotation Curves, Ringdown) and publishes comparable outputs in a common format.
+
+See also: `CALIBRATION_API.md` (frozen contract and status semantics).
 
 ## Quick start (Windows / PowerShell)
 
@@ -31,26 +32,35 @@ Each module publishes results in:
 
 <module>\results\wrapper_status.json
 
-Some modules may also write logs at module root:
-
-<module>\stdout.txt
-
-<module>\stderr.txt
-
-Summary file
 After the run, the pipeline writes:
 
 C:\UCM\RUNS\CALIB\calib_summary.csv
 
+C:\UCM\RUNS\CALIB\calib_summary.json
+
+Common modes
+Dry run (only check pilots exist + create folders):
+
+python tools\run_calib_all.py --outdir C:\UCM\RUNS\CALIB --dry-run
+Check engines (also verify key engine files exist; currently RC):
+
+
+python tools\run_calib_all.py --outdir C:\UCM\RUNS\CALIB --check-engines
+Check contract for an existing run directory (no execution):
+
+python tools\run_calib_all.py --outdir C:\UCM\RUNS\CALIB --check-contract
+Summary CSV (calib_summary.csv)
 Columns:
 
 module — nv / casimir / rc / rd
 
-status — ok / error / missing_results
+status — see CALIBRATION_API.md (e.g., ok / error / missing_results / contract_ok / bad_items_csv ...)
 
-returncode — wrapper/engine return code (0 means “did not crash”)
+returncode — process return code for normal runs (0 means the script did not crash)
 
 has_items_csv — whether results_items.csv exists
+
+outdir — module output folder
 
 error — short error reason (if any)
 
@@ -60,28 +70,24 @@ The module did not publish:
 
 results/results_global.json
 
-Check whether the module crashed before publishing.
-Look for:
+and/or results/results_items.csv
 
-<module>\stderr.txt
+Check the module output folder for logs and wrapper status:
 
-<module>\stdout.txt
+<module>\results\wrapper_status.json
+
+<module>\stdout_tail (in calib_summary.json)
 
 status = error
 Open:
 
-<module>\results\results_global.json
-
 <module>\results\wrapper_status.json
+
+<module>\results\results_global.json
 
 They contain the most direct error message and (for wrappers) traceback tail.
 
 Reproducible baseline
-The pipeline baseline is tagged:
+The pipeline baseline is tagged: calib-v2
 
-calib-v1
-
-To return to the baseline:
-
-git checkout calib-v1
 
