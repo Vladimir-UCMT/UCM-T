@@ -94,7 +94,8 @@ The pipeline baseline is tagged: calib-v2
 Fast end-to-end validation:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File runs/run_calib_smoke_v23.ps1
+powershell -ExecutionPolicy Bypass -File tools/scripts/run_calib_smoke_v23.ps1
+
 Reference notes: benchmarks/CALIB_SMOKE_V23/README.md.
 
 
