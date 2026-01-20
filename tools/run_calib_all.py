@@ -1,19 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-Run all calibration module pilots and write a small summary.
+"""tools/run_calib_all.py
 
-Modules:
+Run all calibration module pilots and write a compact machine-readable summary.
+
+Modules (default plan):
 - NV:      modules/nv/pilot_nv.py
 - Casimir: modules/casimir/pilot_casimir.py
 - RC:      modules/rotation-curves/pilot_rc.py
 - RD:      modules/ringdown/pilot_rd.py
 
-Outputs:
-- <outdir>/<MODULE>/results/{results_global.json,results_items.csv}
+Outputs (when running):
+- <outdir>/<module>/results/{results_global.json, results_items.csv, wrapper_status.json?}
 - <outdir>/calib_summary.json
 - <outdir>/calib_summary.csv
+
+Modes:
+- normal run (default): execute pilots
+- --dry-run:        only verify pilot scripts exist + create folders
+- --check-engines:  verify key engine files exist (currently RC) + create folders
+- --check-contract: validate an existing run directory against the results contract
 """
 
 from __future__ import annotations
@@ -35,46 +42,140 @@ def repo_root() -> Path:
     # tools/run_calib_all.py -> parents[1] = repo root
     return Path(__file__).resolve().parents[1]
 
+
 ENGINE_CHECKS: dict[str, list[str]] = {
+    # keep this intentionally small: only files that must exist for the pilot to run
     "rc": [
-        "modules/rotation-curves/engine/scripts/pilot_sparc_ucmfit_v4_grad_pchip_rhoslab_gradfix_smartRcut_v12_1_production.py",
+        "modules/rotation-curves/engine/scripts/"
+        "pilot_sparc_ucmfit_v4_grad_pchip_rhoslab_gradfix_smartRcut_v12_1_production.py",
         "modules/rotation-curves/engine/core/ucm_rotation_curve_2d_sparse_BASE_grad_pchip.py",
     ],
 }
 
+
 def read_json(p: Path) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
-def run_one(name: str, script_rel: str, outdir: Path, extra_args: list[str], dry_run: bool = False, check_engines: bool = False) -> dict:
+
+def _safe_float(x: str) -> bool:
+    try:
+        float(x)
+        return True
+    except Exception:
+        return False
+
+
+def contract_check(module_out: Path) -> tuple[str, str, str, bool]:
+    """Return (status, error, published_from, has_items_csv)."""
+    gpath = module_out / "results" / "results_global.json"
+    ipath = module_out / "results" / "results_items.csv"
+    wpath = module_out / "results" / "wrapper_status.json"
+
+    # Prefer wrapper_status.json if present (pipeline-facing status)
+    if wpath.exists():
+        try:
+            w = read_json(wpath)
+            status = str(w.get("status", "unknown"))
+            error = str(w.get("error", ""))
+            published_from = str(w.get("published_from", ""))
+        except Exception as e:
+            return ("bad_wrapper_status", f"{type(e).__name__}: {e}", "", ipath.exists())
+    else:
+        status = "unknown"
+        error = ""
+        published_from = ""
+
+    if not gpath.exists():
+        return ("missing_results", f"Missing {gpath}", published_from, ipath.exists())
+    if not ipath.exists():
+        return ("missing_results", f"Missing {ipath}", published_from, False)
+
+    # Validate global JSON readability + minimal expected keys
+    try:
+        g = read_json(gpath)
+    except Exception as e:
+        return ("bad_global_json", f"{type(e).__name__}: {e}", published_from, True)
+
+    for k in ("module", "timestamp_utc", "status", "engine_returncode", "n_items"):
+        if k not in g:
+            return ("bad_global_json", f"Missing key '{k}' in {gpath.name}", published_from, True)
+
+    # Validate items CSV readability + required columns + at least one numeric metric_value
+    try:
+        with ipath.open("r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            if reader.fieldnames is None:
+                return ("bad_items_csv", "CSV has no header", published_from, True)
+            required_cols = {"item_id", "status", "score", "metric_value", "summary"}
+            missing = sorted(required_cols - set(reader.fieldnames))
+            if missing:
+                return ("bad_items_csv", f"Missing columns: {', '.join(missing)}", published_from, True)
+
+            seen_numeric_metric = False
+            nrows = 0
+            for row in reader:
+                nrows += 1
+                mv = (row.get("metric_value") or "").strip()
+                if mv and _safe_float(mv):
+                    seen_numeric_metric = True
+                    break
+            if nrows == 0:
+                return ("bad_items_csv", "CSV has 0 data rows", published_from, True)
+            if not seen_numeric_metric:
+                return ("bad_items_csv", "No numeric metric_value found", published_from, True)
+
+    except Exception as e:
+        return ("bad_items_csv", f"{type(e).__name__}: {e}", published_from, True)
+
+    # If wrapper/global reported error, keep it; otherwise mark contract_ok
+    if status in ("error", "fail"):
+        return ("error", error or "Contract check: module reported error", published_from, True)
+
+    return ("contract_ok", "", published_from, True)
+
+
+def run_one(
+    name: str,
+    script_rel: str,
+    outdir: Path,
+    extra_args: list[str],
+    *,
+    mode: str,
+) -> dict:
     rr = repo_root()
     script = rr / script_rel
     module_out = outdir / name
 
     module_out.mkdir(parents=True, exist_ok=True)
+    (module_out / "results").mkdir(parents=True, exist_ok=True)
 
-    cmd = [sys.executable, "-X", "utf8", str(script), "--outdir", str(module_out)] + extra_args
-    # dry-run: do not execute anything, only verify pilot path and prepare folders
-    if dry_run or check_engines:
-        gpath = module_out / "results" / "results_global.json"
-        ipath = module_out / "results" / "results_items.csv"
-        wpath = module_out / "results" / "wrapper_status.json"
-
-        # ensure expected directory exists
-        (module_out / "results").mkdir(parents=True, exist_ok=True)
-
+    if mode == "dry_run":
         if script.exists():
             return {
                 "module": name,
                 "script": script_rel,
                 "returncode": 0,
                 "status": "dry_ok",
-                "has_items_csv": ipath.exists(),
+                "has_items_csv": (module_out / "results" / "results_items.csv").exists(),
                 "outdir": str(module_out),
                 "error": "",
                 "published_from": "",
                 "stdout_tail": "",
             }
-        else:
+        return {
+            "module": name,
+            "script": script_rel,
+            "returncode": 0,
+            "status": "missing_pilot",
+            "has_items_csv": False,
+            "outdir": str(module_out),
+            "error": f"Missing pilot: {script}",
+            "published_from": "",
+            "stdout_tail": "",
+        }
+
+    if mode == "check_engines":
+        if not script.exists():
             return {
                 "module": name,
                 "script": script_rel,
@@ -87,6 +188,52 @@ def run_one(name: str, script_rel: str, outdir: Path, extra_args: list[str], dry
                 "stdout_tail": "",
             }
 
+        missing_files: list[str] = []
+        for rel in ENGINE_CHECKS.get(name, []):
+            if not (rr / rel).exists():
+                missing_files.append(rel)
+
+        if missing_files:
+            return {
+                "module": name,
+                "script": script_rel,
+                "returncode": 0,
+                "status": "missing_engine",
+                "has_items_csv": False,
+                "outdir": str(module_out),
+                "error": "Missing engine files: " + "; ".join(missing_files),
+                "published_from": "",
+                "stdout_tail": "",
+            }
+
+        return {
+            "module": name,
+            "script": script_rel,
+            "returncode": 0,
+            "status": "check_ok",
+            "has_items_csv": (module_out / "results" / "results_items.csv").exists(),
+            "outdir": str(module_out),
+            "error": "",
+            "published_from": "",
+            "stdout_tail": "",
+        }
+
+    if mode == "check_contract":
+        status, error, published_from, has_items = contract_check(module_out)
+        return {
+            "module": name,
+            "script": script_rel,
+            "returncode": 0,
+            "status": status,
+            "error": error,
+            "has_items_csv": has_items,
+            "published_from": published_from,
+            "stdout_tail": "",
+            "outdir": str(module_out),
+        }
+
+    # normal run
+    cmd = [sys.executable, "-X", "utf8", str(script), "--outdir", str(module_out)] + extra_args
     proc = subprocess.run(
         cmd,
         cwd=str(rr),
@@ -98,6 +245,7 @@ def run_one(name: str, script_rel: str, outdir: Path, extra_args: list[str], dry
     )
     stdout_tail = (proc.stdout or "")[-4000:]
 
+    # prefer wrapper_status.json when present; else fall back to results_global.json
     gpath = module_out / "results" / "results_global.json"
     ipath = module_out / "results" / "results_items.csv"
     wpath = module_out / "results" / "wrapper_status.json"
@@ -109,24 +257,23 @@ def run_one(name: str, script_rel: str, outdir: Path, extra_args: list[str], dry
     if wpath.exists():
         try:
             w = read_json(wpath)
-            status = w.get("status", "unknown")
-            error = w.get("error", "")
-            published_from = w.get("published_from", "")
+            status = str(w.get("status", "unknown"))
+            error = str(w.get("error", ""))
+            published_from = str(w.get("published_from", ""))
         except Exception as e:
             status = "bad_wrapper_status"
             error = f"{type(e).__name__}: {e}"
     elif gpath.exists():
         try:
             g = read_json(gpath)
-            status = g.get("status", "unknown")
-            error = g.get("error", "")
-            published_from = g.get("published_from", "")
+            status = str(g.get("status", "unknown"))
+            error = str(g.get("error", ""))
+            published_from = str(g.get("published_from", ""))
         except Exception as e:
             status = "bad_global_json"
             error = f"{type(e).__name__}: {e}"
     else:
         error = f"Missing {gpath}"
-
 
     return {
         "module": name,
@@ -152,16 +299,31 @@ def main() -> int:
         help="Do not run engines; only check pilot script existence and create folder structure.",
     )
     ap.add_argument(
-    "--check-engines",
-    action="store_true",
-    help="Do not run engines; also check existence of key engine/runner files (currently RC).",
+        "--check-engines",
+        action="store_true",
+        help="Do not run engines; also check existence of key engine/runner files (currently RC).",
+    )
+    ap.add_argument(
+        "--check-contract",
+        action="store_true",
+        help="Do not run engines; validate an existing run directory against the results contract.",
     )
 
-    action="store_true",
-    help="Do not run engines; also check existence of key engine/runner files (currently RC).",
-
-
     args = ap.parse_args()
+
+    # exactly one mode flag at most
+    mode_flags = [args.dry_run, args.check_engines, args.check_contract]
+    if sum(1 for x in mode_flags if x) > 1:
+        print("ERROR: use at most one of --dry-run / --check-engines / --check-contract", file=sys.stderr)
+        return 2
+
+    mode = "run"
+    if args.dry_run:
+        mode = "dry_run"
+    elif args.check_engines:
+        mode = "check_engines"
+    elif args.check_contract:
+        mode = "check_contract"
 
     outdir = Path(args.outdir).resolve()
     outdir.mkdir(parents=True, exist_ok=True)
@@ -178,19 +340,21 @@ def main() -> int:
     results = []
     for name, script, extra in plan:
         if name in skip:
-            results.append({
-                "module": name,
-                "script": script,
-                "returncode": 0,
-                "status": "skipped",
-                "error": "",
-                "has_items_csv": False,
-                "published_from": "",
-                "stdout_tail": "",
-                "outdir": str(outdir / name),
-            })
+            results.append(
+                {
+                    "module": name,
+                    "script": script,
+                    "returncode": 0,
+                    "status": "skipped",
+                    "error": "",
+                    "has_items_csv": False,
+                    "published_from": "",
+                    "stdout_tail": "",
+                    "outdir": str(outdir / name),
+                }
+            )
             continue
-        results.append(run_one(name, script, outdir, extra, dry_run=args.dry_run, check_engines=args.check_engines))
+        results.append(run_one(name, script, outdir, extra, mode=mode))
 
     # Write summary JSON/CSV at root
     (outdir / "calib_summary.json").write_text(
@@ -198,11 +362,13 @@ def main() -> int:
             {
                 "timestamp_utc": now_iso(),
                 "outdir": str(outdir),
+                "mode": mode,
                 "results": results,
             },
             indent=2,
             ensure_ascii=False,
-        ) + "\n",
+        )
+        + "\n",
         encoding="utf-8",
     )
 
