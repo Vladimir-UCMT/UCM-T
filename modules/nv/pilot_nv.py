@@ -37,6 +37,16 @@ def write_results_global(results_dir: Path, payload: dict) -> None:
     p = results_dir / "results_global.json"
     p.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
+def write_wrapper_status(results_dir: Path, status: str, error: str, published_from: str) -> None:
+    p = results_dir / "wrapper_status.json"
+    payload = {
+        "schema": "ucm_wrapper_status_v1",
+        "status": status,
+        "error": error,
+        "published_from": published_from,
+    }
+    p.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
 
 def write_results_items(results_dir: Path, rows: list[dict]) -> None:
     p = results_dir / "results_items.csv"
@@ -77,28 +87,37 @@ def main() -> int:
     global_payload = {
         "schema": "ucm_results_contract_v1",
         "module": "nv",
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "status": status,
+        "engine_returncode": proc.returncode,
+        "n_items": 1,
         "engine": "nv_engine_v023.py",
         "engine_path": os.path.relpath(ENGINE_PATH, Path.cwd()),
         "tag": args.tag,
-        "created_utc": datetime.now(timezone.utc).isoformat(),
-        "status": status,
         "notes": "NV demo run executed via subprocess.",
-        "metrics": {
-            "items_count": 1,
-            "return_code": proc.returncode,
-        },
         "stdout_tail": stdout_tail,
         "stderr_tail": stderr_tail,
     }
+    rows = [{
+        "item_id": "DEMO",
+        "status": "ok" if proc.returncode == 0 else "fail",
+        "score": 1.0 if proc.returncode == 0 else 0.0,
+        "metric_value": float(proc.returncode),
+        "summary": "NV demo return code",
+    }]
 
     write_results_global(results_dir, global_payload)
 
-    rows = [{
-        "item_id": "DEMO",
-        "metric": "nv_demo_return_code",
-        "value": proc.returncode,
-    }]
+    
     write_results_items(results_dir, rows=rows)
+        # wrapper-facing status (written only after publishing results)
+    write_wrapper_status(
+        results_dir,
+        status="ok" if status == "ok" else "error",
+        error="" if status == "ok" else (stderr_tail or "NV wrapper error"),
+        published_from="results_global.json",
+    )
+
 
     print(f"[done] wrote: {results_dir / 'results_global.json'}")
     print(f"[done] wrote: {results_dir / 'results_items.csv'}")
