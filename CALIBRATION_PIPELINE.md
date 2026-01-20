@@ -89,5 +89,13 @@ They contain the most direct error message and (for wrappers) traceback tail.
 
 Reproducible baseline
 The pipeline baseline is tagged: calib-v2
+## Smoke test
+
+Fast end-to-end validation:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File runs/run_calib_smoke_v23.ps1
+Reference notes: benchmarks/CALIB_SMOKE_V23/README.md.
+
 
 
