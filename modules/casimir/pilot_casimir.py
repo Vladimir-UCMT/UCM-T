@@ -10,6 +10,10 @@ from pathlib import Path
 import importlib.util
 
 REPO_ROOT = Path(__file__).resolve().parents[2]  # .../UCM-T
+import sys
+sys.path.insert(0, str(REPO_ROOT))
+from tools.contract_meta import contract_meta
+
 ENGINE_PATH = REPO_ROOT / "modules" / "casimir" / "engine" / "casimir_ucm.py"
 
 
@@ -162,6 +166,8 @@ def main() -> int:
         ]
 
     # Publish (global + items) then wrapper status
+    global_payload.update(contract_meta(wrapper_version="calib-v2.3"))
+
     write_results_global(results_dir, global_payload)
     write_results_items(results_dir, rows=rows)
     write_wrapper_status(

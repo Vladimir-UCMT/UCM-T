@@ -27,6 +27,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Tuple
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+from tools.contract_meta import contract_meta
+
 
 DEFAULT_BENCH = "RD_BENCH_3_NEW"
 
@@ -166,6 +170,8 @@ def _make_contract_global(
         "score_type": score,
         "stdout_tail": stdout_tail,
     }
+    payload.update(contract_meta(wrapper_version="calib-v2.3"))
+
     if error:
         payload["error"] = error
     if engine_global is not None:
