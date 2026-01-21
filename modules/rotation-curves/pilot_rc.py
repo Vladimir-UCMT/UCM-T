@@ -28,6 +28,9 @@ import sys
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+from tools.contract_meta import contract_meta
 
 
 def now_iso() -> str:
@@ -55,13 +58,17 @@ def write_error_contract(outdir: Path, error: str, stdout_tail: str = "") -> Non
     (results_dir / "results_global.json").write_text(
         json.dumps(
             {
-                "module": "modules/rotation-curves",
+                "schema": "ucm_results_contract_v1",
+                "module": "rc",
                 "timestamp_utc": now_iso(),
                 "status": "error",
                 "engine_returncode": 1,
+                "n_items": 1,
                 "error": error,
                 "stdout_tail": stdout_tail,
+                **contract_meta(wrapper_version="calib-v2.3"),
             },
+
             indent=2,
             ensure_ascii=False,
         )
@@ -82,8 +89,24 @@ def find_pilot_results_csv(run_dir: Path) -> Path | None:
     return p if p.exists() else None
 
 
-def publish_success_contract(results_dir: Path, rows: list[dict], proc_returncode: int, pilot_csv: Path | None) -> None:
+def publish_success_contract(results_dir: Path, rows: list[dict], proc_returncode: int, pilot_csv: Path):
     results_dir.mkdir(parents=True, exist_ok=True)
+
+    global_payload = {
+        "schema": "ucm_results_contract_v1",
+        "module": "rc",
+        "timestamp_utc": now_iso(),
+        "status": "ok",
+        "n_items": len(rows),
+        "engine_returncode": int(proc_returncode),
+        "pilot_results_csv": str(pilot_csv) if pilot_csv else "",
+        **contract_meta(wrapper_version="calib-v2.3"),
+    }
+
+    (results_dir / "results_global.json").write_text(
+        json.dumps(global_payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
 
     # items
     with (results_dir / "results_items.csv").open("w", newline="", encoding="utf-8") as f:
@@ -99,24 +122,6 @@ def publish_success_contract(results_dir: Path, rows: list[dict], proc_returncod
                 mv = 0.0
                 st = "fail"
             w.writerow([gal, st, str(chi2), mv, "preset=v3"])
-
-    # global
-    (results_dir / "results_global.json").write_text(
-        json.dumps(
-            {
-                "module": "modules/rotation-curves",
-                "timestamp_utc": now_iso(),
-                "status": "ok",
-                "n_items": len(rows),
-                "engine_returncode": int(proc_returncode),
-                "pilot_results_csv": str(pilot_csv) if pilot_csv else "",
-            },
-            indent=2,
-            ensure_ascii=False,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
 
     # publish wrapper status last
     write_wrapper_status(results_dir, status="ok", error="", published_from="results_global.json")
@@ -182,8 +187,6 @@ def main() -> int:
 
     # Always save logs
     (rc_dir / "stdout.txt").write_text(proc.stdout or "", encoding="utf-8")
-    (rc_dir / "stderr.txt").write_text(proc.stderr or "", encoding="utf-8")
-
     if proc.returncode != 0:
         tail = (proc.stderr or proc.stdout or "").splitlines()[-40:]
         err_msg = "\n".join(tail) if tail else f"Runner failed with return code {proc.returncode}"
@@ -224,11 +227,14 @@ if __name__ == "__main__":
                 (results_dir / "results_global.json").write_text(
                     json.dumps(
                         {
-                            "module": "modules/rotation-curves",
+                            "schema": "ucm_results_contract_v1",
+                            "module": "rc",
                             "timestamp_utc": now_iso(),
                             "status": "error",
                             "engine_returncode": 1,
+                            "n_items": 1,
                             "error": err,
+                            **contract_meta(wrapper_version="calib-v2.3"),
                         },
                         indent=2,
                         ensure_ascii=False,
