@@ -8,6 +8,7 @@
 - Results contract comparator: `tools/compare_results_contract.py`
 - Contract metadata helper: `tools/contract_meta.py`
 - Smoke test launcher: `tools/scripts/run_calib_smoke_v23.ps1`
+- Latest calibration baseline: Release `calib-v2.3.1` (see GitHub Releases)
 
 ## Calibration pipeline (quick check)
 
