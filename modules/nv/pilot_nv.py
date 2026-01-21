@@ -3,23 +3,24 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import json
 import os
 import subprocess
-
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
-
-# Import "raw" engine module (we keep it as-is)
-
-import importlib.util
 
 REPO_ROOT = Path(__file__).resolve().parents[2]  # .../UCM-T
 ENGINE_PATH = REPO_ROOT / "modules" / "nv" / "engine" / "nv_engine_v023.py"
 
-import sys
 sys.path.insert(0, str(REPO_ROOT))
-from tools.contract_meta import contract_meta
+from tools.contract_meta import contract_meta  # noqa: E402
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
 
 def load_engine_module(engine_path: Path):
     spec = importlib.util.spec_from_file_location("nv_engine_v023", str(engine_path))
@@ -36,33 +37,52 @@ def ensure_results_dir(outdir: Path) -> Path:
     return results_dir
 
 
-def write_results_global(results_dir: Path, payload: dict) -> None:
-    p = results_dir / "results_global.json"
-    p.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+def write_json(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-def write_wrapper_status(results_dir: Path, status: str, error: str, published_from: str) -> None:
-    p = results_dir / "wrapper_status.json"
+
+def write_results_global(results_dir: Path, payload: dict) -> None:
+    write_json(results_dir / "results_global.json", payload)
+
+
+def write_wrapper_status(
+    results_dir: Path,
+    status: str,
+    returncode: int,
+    has_items_csv: bool,
+    error: str,
+    published_from: str,
+    out: str = "",
+) -> None:
     payload = {
         "schema": "ucm_wrapper_status_v1",
         "status": status,
+        "returncode": int(returncode),
+        "has_items_csv": bool(has_items_csv),
+        "out": out,
         "error": error,
         "published_from": published_from,
     }
-    p.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    write_json(results_dir / "wrapper_status.json", payload)
 
 
 def write_results_items(results_dir: Path, rows: list[dict]) -> None:
     p = results_dir / "results_items.csv"
-    # Minimal contract: always create CSV with header (even if empty)
-    fieldnames = sorted({k for r in rows for k in r.keys()}) if rows else ["item_id", "metric", "value"]
+    fieldnames = ["item_id", "status", "score", "metric_value", "summary"]
     with p.open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
         for r in rows:
-            w.writerow(r)
+            w.writerow({
+                "item_id": r.get("item_id", ""),
+                "status": r.get("status", ""),
+                "score": r.get("score", ""),
+                "metric_value": r.get("metric_value", ""),
+                "summary": r.get("summary", ""),
+            })
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="UCM-T NV engine wrapper (results contract output).")
+    ap = argparse.ArgumentParser(description="UCM-T NV wrapper (results contract output).")
     ap.add_argument("--outdir", required=True, help="Run output directory (will create results/ inside).")
     ap.add_argument("--tag", default="NV_WRAPPER_DEMO", help="Run tag/name for bookkeeping.")
     args = ap.parse_args()
@@ -71,60 +91,103 @@ def main() -> int:
     outdir.mkdir(parents=True, exist_ok=True)
     results_dir = ensure_results_dir(outdir)
 
-    # Load module (sanity: file exists & imports)
-    _ = load_engine_module(ENGINE_PATH)
+    try:
+        if not ENGINE_PATH.exists():
+            raise FileNotFoundError(f"NV engine not found: {ENGINE_PATH}")
 
-    # Run NV-engine in demo mode (no CSV) with forced UTF-8 (Windows-safe)
-    cmd = ["python", "-X", "utf8", str(ENGINE_PATH), "--no-plots"]
+        # Sanity: import engine module (catch import errors early)
+        _ = load_engine_module(ENGINE_PATH)
 
-    env = os.environ.copy()
-    env["PYTHONUTF8"] = "1"
-    env["PYTHONIOENCODING"] = "utf-8"
+        cmd = ["python", "-X", "utf8", str(ENGINE_PATH), "--no-plots"]
+        env = os.environ.copy()
+        env["PYTHONUTF8"] = "1"
+        env["PYTHONIOENCODING"] = "utf-8"
 
-    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=env)
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=env)
 
-    stdout_tail = "\n".join(proc.stdout.splitlines()[-20:])
-    stderr_tail = "\n".join(proc.stderr.splitlines()[-20:])
-    status = "ok" if proc.returncode == 0 else "error"
+        stdout_tail = "\n".join((proc.stdout or "").splitlines()[-20:])
+        stderr_tail = "\n".join((proc.stderr or "").splitlines()[-20:])
 
-    err = f"{type(e).__name__}: {e}"
+        ok = (proc.returncode == 0)
+        status = "ok" if ok else "error"
 
-    global_payload = {
-        "schema": "ucm_results_contract_v1",
-        "module": "nv",
-        "timestamp_utc": now_iso(),
-        "status": "error",
-        "engine_returncode": 1,
-        "n_items": 1,
-        "error": err,
-        **contract_meta(wrapper_version="calib-v2.3"),
-    }
+        rows = [{
+            "item_id": "DEMO",
+            "status": "ok" if ok else "fail",
+            "score": 1.0 if ok else 0.0,
+            "metric_value": float(proc.returncode),
+            "summary": "NV demo run",
+        }]
 
-    rows = [{
-        "item_id": "DEMO",
-        "status": "ok" if proc.returncode == 0 else "fail",
-        "score": 1.0 if proc.returncode == 0 else 0.0,
-        "metric_value": float(proc.returncode),
-        "summary": "NV demo return code",
-    }]
-    global_payload.update(contract_meta(wrapper_version="calib-v2.3"))
+        global_payload = {
+            "schema": "ucm_results_contract_v1",
+            "module": "nv",
+            "timestamp_utc": now_iso(),
+            "status": status,
+            "engine_returncode": int(proc.returncode),
+            "n_items": len(rows),
+            "stdout_tail": stdout_tail,
+            "stderr_tail": stderr_tail,
+            "tag": args.tag,
+            **contract_meta(wrapper_version="calib-v2.3"),
+        }
+        if not ok:
+            global_payload["error"] = f"engine_returncode={proc.returncode}"
 
-    write_results_global(results_dir, global_payload)
+        write_results_items(results_dir, rows)
+        write_results_global(results_dir, global_payload)
 
-    
-    write_results_items(results_dir, rows=rows)
-        # wrapper-facing status (written only after publishing results)
-    write_wrapper_status(
-        results_dir / "results_global.json").write_text(
-        json.dumps(global_payload, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+        # Wrapper itself succeeded in publishing artifacts => returncode=0
+        write_wrapper_status(
+            results_dir,
+            status=status,
+            returncode=0,
+            has_items_csv=True,
+            error="",
+            published_from="pilot_nv.py",
+            out="",
+        )
+        return 0
 
+    except Exception as e:
+        err = f"{type(e).__name__}: {e}"
+        rows = [{
+            "item_id": "__error__",
+            "status": "fail",
+            "score": 0.0,
+            "metric_value": 1.0,
+            "summary": err,
+        }]
 
-    print(f"[done] wrote: {results_dir / 'results_global.json'}")
-    print(f"[done] wrote: {results_dir / 'results_items.csv'}")
-    return 0
+        global_payload = {
+            "schema": "ucm_results_contract_v1",
+            "module": "nv",
+            "timestamp_utc": now_iso(),
+            "status": "error",
+            "engine_returncode": 1,
+            "n_items": 1,
+            "error": err,
+            **contract_meta(wrapper_version="calib-v2.3"),
+        }
 
+        # Best-effort publish
+        try:
+            write_results_items(results_dir, rows)
+            write_results_global(results_dir, global_payload)
+            write_wrapper_status(
+                results_dir,
+                status="error",
+                returncode=0,
+                has_items_csv=True,
+                error=err,
+                published_from="pilot_nv.py",
+                out="",
+            )
+        except Exception:
+            # If even publishing fails, propagate nonzero
+            return 2
+
+        return 0
 
 
 if __name__ == "__main__":
