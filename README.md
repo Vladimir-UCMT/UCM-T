@@ -6,7 +6,22 @@
 - Modules: `modules/`
 - Results contract: `tools/results_contract.md`
 - Results contract comparator: `tools/compare_results_contract.py`
+- Contract metadata helper: `tools/contract_meta.py`
+- Smoke test launcher: `tools/scripts/run_calib_smoke_v23.ps1`
 
+## Calibration pipeline (quick check)
+
+To verify that the unified calibration wrappers are working end-to-end, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/scripts/run_calib_smoke_v23.ps1
+Outputs are written under C:\UCM\RUNS\... and each module publishes artifacts into:
+
+results/results_global.json
+
+results/results_items.csv
+
+results/wrapper_status.json
 
 **Unified Compressible Medium Theory (UCM-T)**  
 Research hub for models, calibration pipelines, and reproducible benchmarks.
