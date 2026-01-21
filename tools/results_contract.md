@@ -8,60 +8,14 @@ needed for reproducibility and cross-domain comparison.
 
 ## Minimal result set (recommended)
 
-A reproducible run should produce:
+A reproducible run should produce (recommended location: `results/`):
 
-1. `results_global.json` — run-level summary (single file)
-2. `results_items.csv` — item-level table (rows = events/objects/tests)
-3. `run_manifest.txt` (or `.md`) — human-readable reproduction notes
+1. `results/results_global.json` — run-level summary (single file)
+2. `results/results_items.csv` — item-level table (rows = events/objects/tests)
+3. `results/wrapper_status.json` — wrapper execution status (publish success/failure)
+4. `run_manifest.txt` (or `.md`) — human-readable reproduction notes
 
-Modules may add additional outputs (figures, logs, posteriors), but these three
-files provide a common denominator for comparison.
-
----
-
-## 1) `results_global.json` (run-level summary)
-
-**Purpose:** capture the run configuration and aggregate metrics.
-
-Recommended fields:
-
-- `ucmt_repo`: repository identifier (e.g., `Vladimir-UCMT/UCM-T`)
-- `module`: module path (e.g., `modules/rotation-curves`)
-- `engine_name`: name of engine/script used
-- `engine_version`: version string if available
-- `commit_hash`: git commit hash (if applicable)
-- `timestamp_utc`: ISO timestamp
-- `dataset_id`: dataset name/version (or DOI)
-- `n_items`: number of items evaluated
-- `metrics`: dictionary of aggregate metrics (e.g., mean chi2, pass rate)
-- `params`: dictionary of key parameters (model/regime/hyperparameters)
-- `notes`: free text (optional)
-
----
-
-## 2) `results_items.csv` (item-level table)
-
-**Purpose:** comparable per-object/per-event results.
-
-Required columns (minimal):
-- `item_id` — object/event identifier
-- `status` — `ok` / `fail` / `skip`
-- `score` — primary scalar score (module-defined; documented in module README)
-- `summary` — short note or key parameter/value (optional but helpful)
-
-Recommended additional columns:
-- `score_alt` — secondary score if needed
-- `n_data` — number of data points used
-- `runtime_s` — runtime per item (if applicable)
-- module-specific parameters (documented in module README)
-
----
-
-## 3) `run_manifest.txt` (or `.md`)
-
-**Purpose:** a short human-readable reproduction recipe.
-
-Include:
+`run_manifest` should include:
 - exact commands used to run,
 - dependency notes,
 - where inputs came from (links/DOI),
@@ -70,8 +24,104 @@ Include:
 
 ---
 
-## Notes
+## results_global.json
 
-- This contract is intentionally minimal and flexible.
-- Each module must document the meaning of `score` and any module-specific columns.
-- Large artifacts (e.g., full posteriors) should be stored externally when appropriate.
+### Required fields (minimal)
+
+- `schema`: `ucm_results_contract_v1`
+- `module`: short module id (e.g., `nv`, `casimir`, `rc`, `rd`)
+- `timestamp_utc`: ISO8601 timestamp in UTC
+- `status`: `ok` or `error`
+- `engine_returncode`: integer engine/process return code
+- `n_items`: integer number of item rows written to `results_items.csv`
+
+### Recommended fields (repro metadata)
+
+These fields are typically injected by a helper (e.g., `tools/contract_meta.py`):
+
+- `ucmt_repo`: git remote URL (if available)
+- `ucmt_commit`: git commit hash (if available)
+- `python_version`: runtime Python version
+- `platform`: OS/platform string
+- `wrapper_version`: wrapper/pipeline version tag (e.g., `calib-v2.3`)
+
+### Optional fields
+
+- `error`: short error string (present when `status="error"`)
+- `stdout_tail`, `stderr_tail`: short tails for debugging (optional)
+
+---
+
+## results_items.csv
+
+### Required columns (pipeline-compatible minimal set)
+
+- `item_id` — unique row id (event/object/test id)
+- `status` — `ok` or `fail`
+- `score` — numeric (module-defined meaning)
+- `metric_value` — numeric primary metric (module-defined meaning)
+- `summary` — short human-readable summary
+
+Modules may add extra columns. Each module must document the meaning of `score`,
+`metric_value`, and any additional columns.
+
+---
+
+## wrapper_status.json
+
+Wrapper status is written to `results/wrapper_status.json` and describes whether the
+wrapper successfully **published** contract artifacts (even if the engine failed).
+
+### Recommended fields
+
+- `schema`: `ucm_wrapper_status_v1`
+- `status`: wrapper status (`ok` / `error`)
+- `returncode`: wrapper publish return code (0 means wrapper finished publishing)
+- `has_items_csv`: boolean
+- `error`: string (empty if none)
+- `published_from`: script name (e.g., `pilot_rc.py`)
+
+---
+
+## Examples
+
+### Example: results/results_global.json
+
+```json
+{
+  "schema": "ucm_results_contract_v1",
+  "module": "nv",
+  "timestamp_utc": "2026-01-21T12:34:56+00:00",
+  "status": "ok",
+  "engine_returncode": 0,
+  "n_items": 1,
+  "ucmt_commit": "abc123def456",
+  "python_version": "3.12.7",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "wrapper_version": "calib-v2.3"
+}
+
+###Example: results/results_items.csv
+
+item_id,status,score,metric_value,summary
+DEMO,ok,1.0,0.0,NV demo run
+__error__,fail,0.0,1.0,FileNotFoundError: NV engine not found
+
+###Example: results/wrapper_status.json
+
+{
+  "schema": "ucm_wrapper_status_v1",
+  "status": "ok",
+  "returncode": 0,
+  "has_items_csv": true,
+  "error": "",
+  "published_from": "pilot_nv.py"
+}
+
+##Notes
+
+This contract is intentionally minimal and flexible.
+Large artifacts (e.g., full posteriors) should be stored externally when appropriate.
+
+
+
