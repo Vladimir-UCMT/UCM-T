@@ -17,6 +17,9 @@ import importlib.util
 REPO_ROOT = Path(__file__).resolve().parents[2]  # .../UCM-T
 ENGINE_PATH = REPO_ROOT / "modules" / "nv" / "engine" / "nv_engine_v023.py"
 
+import sys
+sys.path.insert(0, str(REPO_ROOT))
+from tools.contract_meta import contract_meta
 
 def load_engine_module(engine_path: Path):
     spec = importlib.util.spec_from_file_location("nv_engine_v023", str(engine_path))
@@ -84,20 +87,19 @@ def main() -> int:
     stderr_tail = "\n".join(proc.stderr.splitlines()[-20:])
     status = "ok" if proc.returncode == 0 else "error"
 
+    err = f"{type(e).__name__}: {e}"
+
     global_payload = {
         "schema": "ucm_results_contract_v1",
         "module": "nv",
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-        "status": status,
-        "engine_returncode": proc.returncode,
+        "timestamp_utc": now_iso(),
+        "status": "error",
+        "engine_returncode": 1,
         "n_items": 1,
-        "engine": "nv_engine_v023.py",
-        "engine_path": os.path.relpath(ENGINE_PATH, Path.cwd()),
-        "tag": args.tag,
-        "notes": "NV demo run executed via subprocess.",
-        "stdout_tail": stdout_tail,
-        "stderr_tail": stderr_tail,
+        "error": err,
+        **contract_meta(wrapper_version="calib-v2.3"),
     }
+
     rows = [{
         "item_id": "DEMO",
         "status": "ok" if proc.returncode == 0 else "fail",
@@ -105,6 +107,7 @@ def main() -> int:
         "metric_value": float(proc.returncode),
         "summary": "NV demo return code",
     }]
+    global_payload.update(contract_meta(wrapper_version="calib-v2.3"))
 
     write_results_global(results_dir, global_payload)
 
@@ -112,10 +115,9 @@ def main() -> int:
     write_results_items(results_dir, rows=rows)
         # wrapper-facing status (written only after publishing results)
     write_wrapper_status(
-        results_dir,
-        status="ok" if status == "ok" else "error",
-        error="" if status == "ok" else (stderr_tail or "NV wrapper error"),
-        published_from="results_global.json",
+        results_dir / "results_global.json").write_text(
+        json.dumps(global_payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
     )
 
 
