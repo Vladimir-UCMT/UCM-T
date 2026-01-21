@@ -291,7 +291,7 @@ def run_one(
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run all UCM-T calibration module pilots.")
     ap.add_argument("--outdir", required=True, help="Root output directory for the whole calibration run.")
-    ap.add_argument("--skip", default="", help="Comma list: nv,casimir,rc,rd")
+    ap.add_argument("--skip", default="", help="Comma list: nv,casimir,rel,rc,rd")
     ap.add_argument("--rd-no-run", action="store_true", help="Pass --no-run to RD adapter.")
     ap.add_argument(
         "--dry-run",
@@ -333,9 +333,11 @@ def main() -> int:
     plan = [
         ("nv", "modules/nv/pilot_nv.py", []),
         ("casimir", "modules/casimir/pilot_casimir.py", []),
+        ("rel", "modules/rel/pilot_rel.py", []),
         ("rc", "modules/rotation-curves/pilot_rc.py", []),
         ("rd", "modules/ringdown/pilot_rd.py", ["--no-run"] if args.rd_no_run else []),
     ]
+
 
     results = []
     for name, script, extra in plan:
