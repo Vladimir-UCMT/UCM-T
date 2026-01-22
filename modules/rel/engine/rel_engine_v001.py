@@ -163,6 +163,9 @@ def main() -> int:
     ap.add_argument("--demo", action="store_true", help="Run demo mode.")
     ap.add_argument("--outdir", default="", help="Optional outdir for engine-native artifacts.")
     ap.add_argument("--selftest", action="store_true", help="Run internal self-test and exit.")
+    ap.add_argument("--calc-horizon", default="", help="Path to JSON with {xs,vs,c0} to compute x_H, Omega_H, T_H_coeff.")
+    ap.add_argument("--out", default="", help="Optional output JSON path for calc-horizon result.")
+
     args = ap.parse_args()
 
     if args.selftest:
@@ -170,6 +173,32 @@ def main() -> int:
         
         print("[rel] selftest: OK")
         return 0
+    
+    if args.calc_horizon:
+        inp = json.loads(Path(args.calc_horizon).read_text(encoding="utf-8-sig"))
+        xs = [float(x) for x in inp["xs"]]
+        vs = [float(v) for v in inp["vs"]]
+        c0 = float(inp["c0"])
+        xh = find_horizon_x(xs, vs, c0=c0)
+        Om = omega_h(xs, vs, xh)
+        Th = hawking_temperature(Om)
+
+        outp = {
+            "engine": "rel_engine_v001",
+            "timestamp_utc": now_iso(),
+            "input": {"xs": xs, "vs": vs, "c0": c0},
+            "horizon_x": xh,
+            "Omega_H": Om,
+            "T_H_coeff": Th,
+            "units_note": "T_H_coeff = Omega_H/(2*pi); SI requires hbar,k_B",
+        }
+
+        if args.out:
+            Path(args.out).write_text(json.dumps(outp, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        else:
+            print(json.dumps(outp, ensure_ascii=False))
+        return 0
+
 
     # Demo: produce a tiny engine-native artifact (NOT the results contract).
     payload = {
