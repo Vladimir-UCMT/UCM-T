@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from datetime import datetime, timezone
 from pathlib import Path
-import math
+
 
 def _dot(a: tuple[float, float, float], b: tuple[float, float, float]) -> float:
-    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 
 
 def _norm(a: tuple[float, float, float]) -> float:
@@ -33,12 +34,26 @@ def group_velocity(
     kn = _norm(k)
     if kn <= 0.0:
         raise ValueError("k must be non-zero for group_velocity")
-    return (v0[0] + c0 * k[0]/kn, v0[1] + c0 * k[1]/kn, v0[2] + c0 * k[2]/kn)
+    return (v0[0] + c0 * k[0] / kn, v0[1] + c0 * k[1] / kn, v0[2] + c0 * k[2] / kn)
+
+
+def loop_phase_from_circulation(omega: float, chi: float, c0: float, circulation: float) -> float:
+    """ΔΦ_loop = (ω/(χ c0^2)) ∮ v0·dl  (Eq. 27)."""
+    if chi == 0.0 or c0 == 0.0:
+        raise ValueError("chi and c0 must be non-zero")
+    return omega * circulation / (chi * c0 * c0)
+
+
+def sagnac_phase(omega: float, chi: float, c0: float, omega_dot_area: float) -> float:
+    """ΔΦ_Sag = (2ω/(χ c0^2)) Ω·A  (Eq. 29)."""
+    if chi == 0.0 or c0 == 0.0:
+        raise ValueError("chi and c0 must be non-zero")
+    return 2.0 * omega * omega_dot_area / (chi * c0 * c0)
 
 
 def _selftest() -> None:
     # simple numeric check (not a physics test suite)
-    k = (3.0, 4.0, 0.0)      # |k|=5
+    k = (3.0, 4.0, 0.0)  # |k|=5
     v0 = (10.0, 0.0, 0.0)
     c0 = 2.0
     w = omega_forward(k, v0, c0)
@@ -50,6 +65,15 @@ def _selftest() -> None:
     assert abs(vg[0] - 11.2) < 1e-12
     assert abs(vg[1] - 1.6) < 1e-12
     assert abs(vg[2] - 0.0) < 1e-12
+
+    # loop phase checks (Eq. 27, 29)
+    chi = 0.5
+    circulation = 7.0
+    phi_loop = loop_phase_from_circulation(omega=4.0, chi=chi, c0=2.0, circulation=circulation)
+    assert abs(phi_loop - 14.0) < 1e-12
+
+    phi_sag = sagnac_phase(omega=4.0, chi=chi, c0=2.0, omega_dot_area=3.0)
+    assert abs(phi_sag - 12.0) < 1e-12
 
 
 def now_iso() -> str:
