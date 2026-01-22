@@ -66,9 +66,7 @@ python modules/rel/pilot_rel.py --outdir .\RUN --tag REL_REAL
 Remove-Item Env:REL_INPUT_JSON
 When available, the wrapper copies horizon_x, Omega_H, T_H_coeff into results_global.json.
 
-Wrapper mode selection:
-- `REL_MODE=horizon` (default when `REL_INPUT_JSON` is set) → engine `--calc-horizon`
-- `REL_MODE=null_speeds` → engine `--calc-null-speeds` (expects `{x,xs,vs,c0}`)
+
 
 Example (PowerShell, null speeds):
 ```powershell
@@ -87,6 +85,7 @@ python -m py_compile modules/rel/engine/rel_engine_v001.py
 Wrapper mode selection:
 - `REL_MODE=horizon` (default when `REL_INPUT_JSON` is set) → engine `--calc-horizon`
 - `REL_MODE=null_speeds` → engine `--calc-null-speeds` (expects `{x,xs,vs,c0}`)
+- `REL_MODE=profile → engine --calc-profile (unified: horizon + null-speeds if x provided)
 
 Example (PowerShell, null speeds):
 ```powershell
