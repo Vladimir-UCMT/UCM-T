@@ -182,6 +182,47 @@ def omega_h(xs: list[float], vs: list[float], x_h: float) -> float:
         raise ValueError("duplicate xs points")
     return (vs[best_i + 1] - vs[best_i]) / dx
 
+def analyze_profile_1d(inp: dict) -> dict:
+    """
+    Unified profile analysis.
+    Input supports:
+      - horizon: {xs,vs,c0}
+      - null speeds: {x,xs,vs,c0}
+    Returns a dict with whatever can be computed.
+    """
+    xs = [float(z) for z in inp["xs"]]
+    vs = [float(z) for z in inp["vs"]]
+    c0 = float(inp["c0"])
+
+    out = {"input": {"xs": xs, "vs": vs, "c0": c0}}
+
+    # horizon-related
+    try:
+        xh = find_horizon_x(xs, vs, c0=c0)
+        Om = omega_h(xs, vs, xh)
+        out.update({
+            "horizon_x": xh,
+            "Omega_H": Om,
+            "T_H_coeff": hawking_temperature(Om),
+        })
+    except Exception:
+        pass
+
+    # null-speeds at point
+    if "x" in inp:
+        x = float(inp["x"])
+        v_at = interp1_linear(xs, vs, x)
+        s_minus, s_plus = null_speeds_1d(v_at, c0)
+        out.update({
+            "x": x,
+            "v0_at_x": v_at,
+            "dxdt_minus": s_minus,
+            "dxdt_plus": s_plus,
+        })
+
+    return out
+
+
 def hawking_temperature(
     omega_h_val: float,
     hbar: float | None = None,
@@ -348,13 +389,13 @@ def main() -> int:
         Om = omega_h(xs, vs, xh)
         Th = hawking_temperature(Om)
 
+        inp = json.loads(Path(args.calc_horizon).read_text(encoding="utf-8-sig"))
+        res = analyze_profile_1d(inp)
+
         outp = {
             "engine": "rel_engine_v001",
             "timestamp_utc": now_iso(),
-            "input": {"xs": xs, "vs": vs, "c0": c0},
-            "horizon_x": xh,
-            "Omega_H": Om,
-            "T_H_coeff": Th,
+            **res,
             "units_note": "T_H_coeff = Omega_H/(2*pi); SI requires hbar,k_B",
         }
 
@@ -374,14 +415,15 @@ def main() -> int:
         v_at = interp1_linear(xs, vs, x)
         s_minus, s_plus = null_speeds_1d(v_at, c0)
 
+        inp = json.loads(Path(args.calc_null_speeds).read_text(encoding="utf-8-sig"))
+        res = analyze_profile_1d(inp)
+
         outp = {
             "engine": "rel_engine_v001",
             "timestamp_utc": now_iso(),
-            "input": {"x": x, "xs": xs, "vs": vs, "c0": c0},
-            "v0_at_x": v_at,
-            "dxdt_minus": s_minus,
-            "dxdt_plus": s_plus,
+            **res,
         }
+        
         if args.out:
             Path(args.out).write_text(json.dumps(outp, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         else:
