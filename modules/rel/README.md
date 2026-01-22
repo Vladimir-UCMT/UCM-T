@@ -83,3 +83,15 @@ Remove-Item Env:REL_MODE
 ```powershell
 cd C:\UCM\UCM-T
 python -m py_compile modules/rel/engine/rel_engine_v001.py
+
+Wrapper mode selection:
+- `REL_MODE=horizon` (default when `REL_INPUT_JSON` is set) → engine `--calc-horizon`
+- `REL_MODE=null_speeds` → engine `--calc-null-speeds` (expects `{x,xs,vs,c0}`)
+
+Example (PowerShell, null speeds):
+```powershell
+$env:REL_INPUT_JSON = (Resolve-Path .\in_nullspeeds.json).Path
+$env:REL_MODE = "null_speeds"
+python modules/rel/pilot_rel.py --outdir .\RUN --tag REL_NS
+Remove-Item Env:REL_INPUT_JSON
+Remove-Item Env:REL_MODE
