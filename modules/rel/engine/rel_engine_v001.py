@@ -371,6 +371,7 @@ def main() -> int:
     ap.add_argument("--calc-horizon", default="", help="Path to JSON with {xs,vs,c0} to compute x_H, Omega_H, T_H_coeff.")
     ap.add_argument("--out", default="", help="Optional output JSON path for calc-horizon result.")
     ap.add_argument("--calc-null-speeds", default="", help="Path to JSON with {x,xs,vs,c0} to compute v0(x) and v0±c0.")
+    ap.add_argument("--calc-profile", default="", help="Path to JSON with {xs,vs,c0} and optional {x}; runs unified analysis.")
 
     args = ap.parse_args()
 
@@ -429,6 +430,24 @@ def main() -> int:
         else:
             print(json.dumps(outp, ensure_ascii=False))
         return 0
+
+    if args.calc_profile:
+        inp = json.loads(Path(args.calc_profile).read_text(encoding="utf-8-sig"))
+        res = analyze_profile_1d(inp)
+
+        outp = {
+            "engine": "rel_engine_v001",
+            "timestamp_utc": now_iso(),
+            **res,
+            "units_note": "T_H_coeff = Omega_H/(2*pi); SI requires hbar,k_B",
+        }
+
+        if args.out:
+            Path(args.out).write_text(json.dumps(outp, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        else:
+            print(json.dumps(outp, ensure_ascii=False))
+        return 0
+
 
     # Demo: produce a tiny engine-native artifact (NOT the results contract).
     payload = {
