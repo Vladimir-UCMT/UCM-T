@@ -178,6 +178,21 @@ def main() -> int:
         "mode": "demo" if args.demo else "noop",
         "notes": "This is a placeholder engine skeleton.",
     }
+        # lightweight demo calc: simple linear profile v(x)=1+x, c0=2
+    xs = [0.0, 1.0, 2.0]
+    vs = [1.0, 2.0, 3.0]
+    xh = find_horizon_x(xs, vs, c0=2.0)
+    Om = omega_h(xs, vs, xh)
+    Th_coeff = hawking_temperature(Om)  # coefficient-only (no SI constants)
+
+    payload["calc"] = {
+        "profile": {"xs": xs, "vs": vs, "c0": 2.0},
+        "horizon_x": xh,
+        "Omega_H": Om,
+        "T_H_coeff": Th_coeff,
+        "units_note": "T_H_coeff = Omega_H/(2*pi); SI requires hbar,k_B",
+    }
+
 
     if args.outdir:
         outdir = Path(args.outdir).resolve()
