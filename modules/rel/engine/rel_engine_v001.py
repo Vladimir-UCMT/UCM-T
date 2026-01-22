@@ -87,6 +87,15 @@ def _mat2_mul(a: list[list[float]], b: list[list[float]]) -> list[list[float]]:
         [a[1][0] * b[0][0] + a[1][1] * b[1][0], a[1][0] * b[0][1] + a[1][1] * b[1][1]],
     ]
 
+def null_speeds_1d(v0: float, c0: float) -> tuple[float, float]:
+    """Characteristic speeds from ds^2=0: dx/dt = v0 ± c0."""
+    return (v0 - c0, v0 + c0)
+
+
+def is_null_1d(dt: float, dx: float, v0: float, c0: float, rho0: float = 1.0, tol: float = 1e-12) -> bool:
+    """Check ds^2≈0 using Eq.24 implementation."""
+    return abs(acoustic_ds2_1d(dt=dt, dx=dx, v0=v0, c0=c0, rho0=rho0)) <= tol
+
 
 def find_horizon_x(xs: list[float], vs: list[float], c0: float) -> float:
     """Find x_H where v0 crosses c0 by linear interpolation (v0(x_H)=c0)."""
@@ -240,6 +249,15 @@ def _selftest() -> None:
     assert abs(I[0][1] - 0.0) < 1e-12
     assert abs(I[1][0] - 0.0) < 1e-12
     assert abs(I[1][1] - 1.0) < 1e-12
+
+    # Null characteristics from metric (ds^2=0): dx/dt = v0 ± c0
+    v0 = 0.7
+    c0 = 2.0
+    s1, s2 = null_speeds_1d(v0, c0)
+    assert abs(s1 - (v0 - c0)) < 1e-12
+    assert abs(s2 - (v0 + c0)) < 1e-12
+    # check ds^2==0 for dx = (v0+c0) dt
+    assert is_null_1d(dt=1.0, dx=(v0 + c0) * 1.0, v0=v0, c0=c0, rho0=1.0, tol=1e-9)
 
 
 def now_iso() -> str:
