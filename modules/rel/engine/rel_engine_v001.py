@@ -193,6 +193,19 @@ def main() -> int:
         "units_note": "T_H_coeff = Omega_H/(2*pi); SI requires hbar,k_B",
     }
 
+    # second demo profile: v(x)=2x, c0=2  -> x_H=1, Omega_H=2
+    xs2 = [0.0, 1.0, 2.0]
+    vs2 = [0.0, 2.0, 4.0]
+    xh2 = find_horizon_x(xs2, vs2, c0=2.0)
+    Om2 = omega_h(xs2, vs2, xh2)
+    Th2 = hawking_temperature(Om2)
+
+    payload["calc2"] = {
+        "profile": {"xs": xs2, "vs": vs2, "c0": 2.0},
+        "horizon_x": xh2,
+        "Omega_H": Om2,
+        "T_H_coeff": Th2,
+    }
 
     if args.outdir:
         outdir = Path(args.outdir).resolve()
