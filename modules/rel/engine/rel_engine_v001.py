@@ -96,6 +96,23 @@ def is_null_1d(dt: float, dx: float, v0: float, c0: float, rho0: float = 1.0, to
     """Check ds^2≈0 using Eq.24 implementation."""
     return abs(acoustic_ds2_1d(dt=dt, dx=dx, v0=v0, c0=c0, rho0=rho0)) <= tol
 
+def _unit(n: tuple[float, float, float]) -> tuple[float, float, float]:
+    nn = _norm(n)
+    if nn <= 0.0:
+        raise ValueError("direction must be non-zero")
+    return (n[0] / nn, n[1] / nn, n[2] / nn)
+
+
+def null_speeds_along(
+    n: tuple[float, float, float],
+    v0: tuple[float, float, float],
+    c0: float,
+) -> tuple[float, float]:
+    """Speeds along direction n-hat: v0·n̂ ± c0."""
+    nh = _unit(n)
+    proj = _dot(v0, nh)
+    return (proj - c0, proj + c0)
+
 
 def find_horizon_x(xs: list[float], vs: list[float], c0: float) -> float:
     """Find x_H where v0 crosses c0 by linear interpolation (v0(x_H)=c0)."""
@@ -258,6 +275,15 @@ def _selftest() -> None:
     assert abs(s2 - (v0 + c0)) < 1e-12
     # check ds^2==0 for dx = (v0+c0) dt
     assert is_null_1d(dt=1.0, dx=(v0 + c0) * 1.0, v0=v0, c0=c0, rho0=1.0, tol=1e-9)
+
+    # Directional null speeds: v0·n̂ ± c0
+    v0v = (1.0, 2.0, 0.0)
+    n = (3.0, 4.0, 0.0)  # n̂=(0.6,0.8,0)
+    c0 = 2.0
+    s1, s2 = null_speeds_along(n, v0v, c0)
+    # v0·n̂ = 1*0.6 + 2*0.8 = 2.2
+    assert abs(s1 - 0.2) < 1e-12
+    assert abs(s2 - 4.2) < 1e-12
 
 
 def now_iso() -> str:
