@@ -131,6 +131,38 @@ def find_horizon_x(xs: list[float], vs: list[float], c0: float) -> float:
             return x1 + t * (x2 - x1)
     raise ValueError("no horizon crossing found")
 
+def interp1_linear(xs: list[float], ys: list[float], x: float) -> float:
+    """Piecewise-linear interpolation for monotonic/unsorted xs (uses nearest segment)."""
+    if len(xs) != len(ys) or len(xs) < 2:
+        raise ValueError("xs and ys must have same length >= 2")
+    # find best bracketing segment
+    best_i = None
+    best_span = float("inf")
+    for i in range(len(xs) - 1):
+        x1, x2 = xs[i], xs[i + 1]
+        lo, hi = (x1, x2) if x1 <= x2 else (x2, x1)
+        if lo <= x <= hi:
+            span = hi - lo
+            if span < best_span:
+                best_span = span
+                best_i = i
+    if best_i is None:
+        # fallback: nearest segment midpoint
+        best_i = 0
+        best_d = float("inf")
+        for i in range(len(xs) - 1):
+            xm = 0.5 * (xs[i] + xs[i + 1])
+            d = abs(xm - x)
+            if d < best_d:
+                best_d = d
+                best_i = i
+    x1, x2 = xs[best_i], xs[best_i + 1]
+    y1, y2 = ys[best_i], ys[best_i + 1]
+    if x2 == x1:
+        return float(y1)
+    t = (x - x1) / (x2 - x1)
+    return float(y1 + t * (y2 - y1))
+
 
 def omega_h(xs: list[float], vs: list[float], x_h: float) -> float:
     """Ω_H ≈ dv0/dx at x_h using nearest segment slope (Eq. 30)."""
@@ -297,6 +329,7 @@ def main() -> int:
     ap.add_argument("--selftest", action="store_true", help="Run internal self-test and exit.")
     ap.add_argument("--calc-horizon", default="", help="Path to JSON with {xs,vs,c0} to compute x_H, Omega_H, T_H_coeff.")
     ap.add_argument("--out", default="", help="Optional output JSON path for calc-horizon result.")
+    ap.add_argument("--calc-null-speeds", default="", help="Path to JSON with {x,xs,vs,c0} to compute v0(x) and v0±c0.")
 
     args = ap.parse_args()
 
@@ -331,6 +364,29 @@ def main() -> int:
             print(json.dumps(outp, ensure_ascii=False))
         return 0
 
+    if args.calc_null_speeds:
+        inp = json.loads(Path(args.calc_null_speeds).read_text(encoding="utf-8-sig"))
+        x = float(inp["x"])
+        xs = [float(z) for z in inp["xs"]]
+        vs = [float(z) for z in inp["vs"]]
+        c0 = float(inp["c0"])
+
+        v_at = interp1_linear(xs, vs, x)
+        s_minus, s_plus = null_speeds_1d(v_at, c0)
+
+        outp = {
+            "engine": "rel_engine_v001",
+            "timestamp_utc": now_iso(),
+            "input": {"x": x, "xs": xs, "vs": vs, "c0": c0},
+            "v0_at_x": v_at,
+            "dxdt_minus": s_minus,
+            "dxdt_plus": s_plus,
+        }
+        if args.out:
+            Path(args.out).write_text(json.dumps(outp, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        else:
+            print(json.dumps(outp, ensure_ascii=False))
+        return 0
 
     # Demo: produce a tiny engine-native artifact (NOT the results contract).
     payload = {
