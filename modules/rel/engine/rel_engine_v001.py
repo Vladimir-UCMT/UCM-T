@@ -109,6 +109,35 @@ def hawking_temperature(
         return omega_h_val / (2.0 * math.pi)
     return (hbar * omega_h_val) / (2.0 * math.pi * k_b)
 
+def eikonal_phase(action_line: float, omega: float, T: float) -> float:
+    """Eikonal phase/action: S = ∮ p·dx − ω T  (Eq. 25)."""
+    return float(action_line) - float(omega) * float(T)
+
+
+def _ham_F(k: tuple[float, float, float], v0: tuple[float, float, float], c0: float, omega: float) -> float:
+    # F(k) = 1/2(ω − v0·k)^2 − 1/2 c0^2 |k|^2   (inside ∇_k in Eq. 26)
+    vk = _dot(v0, k)
+    kn2 = _dot(k, k)
+    return 0.5 * (omega - vk) * (omega - vk) - 0.5 * (c0 * c0) * kn2
+
+
+def canonical_momentum(
+    k: tuple[float, float, float],
+    v0: tuple[float, float, float],
+    c0: float,
+    omega: float,
+) -> tuple[float, float, float]:
+    """p = ∇_k[ 1/2(ω − v0·k)^2 − 1/2 c0^2 |k|^2 ]  (Eq. 26)."""
+    vk = _dot(v0, k)
+    fac = -(omega - vk)  # derivative of 1/2(omega - v0·k)^2 w.r.t k gives (omega - v0·k)(-v0)
+    c2 = c0 * c0
+    return (
+        fac * v0[0] - c2 * k[0],
+        fac * v0[1] - c2 * k[1],
+        fac * v0[2] - c2 * k[2],
+    )
+
+
 def _selftest() -> None:
     # simple numeric check (not a physics test suite)
     k = (3.0, 4.0, 0.0)  # |k|=5
@@ -152,6 +181,25 @@ def _selftest() -> None:
         # Hawking analogue temperature proportionality (Eq. 31)
     th = hawking_temperature(omega_h_val=2.0)
     assert abs(th - (2.0 / (2.0 * math.pi))) < 1e-12
+
+    # Eq.25: S = I - omega*T
+    S = eikonal_phase(action_line=10.0, omega=2.0, T=3.0)
+    assert abs(S - 4.0) < 1e-12
+
+    # Eq.26: compare analytic ∇_k F with finite differences
+    k = (0.3, -0.4, 0.5)
+    v0 = (1.2, -0.7, 0.1)
+    c0 = 1.8
+    omega = 2.3
+    p = canonical_momentum(k, v0, c0, omega)
+    eps = 1e-6
+    for i in range(3):
+        k1 = [k[0], k[1], k[2]]
+        k2 = [k[0], k[1], k[2]]
+        k1[i] += eps
+        k2[i] -= eps
+        num = (_ham_F((k1[0], k1[1], k1[2]), v0, c0, omega) - _ham_F((k2[0], k2[1], k2[2]), v0, c0, omega)) / (2.0 * eps)
+        assert abs(p[i] - num) < 1e-6
 
 
 def now_iso() -> str:
