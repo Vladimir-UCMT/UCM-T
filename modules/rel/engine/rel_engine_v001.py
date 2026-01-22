@@ -73,6 +73,14 @@ def _selftest() -> None:
     assert abs(vg[0] - 11.2) < 1e-12
     assert abs(vg[1] - 1.6) < 1e-12
     assert abs(vg[2] - 0.0) < 1e-12
+        # horizon & Omega_H checks (Eq. 30): v(x)=1+x, c0=2 => x_H=1, dv/dx=1
+    xs = [0.0, 1.0, 2.0]
+    vs = [1.0, 2.0, 3.0]
+    xh = find_horizon_x(xs, vs, c0=2.0)
+    assert abs(xh - 1.0) < 1e-12
+    Om = omega_h(xs, vs, xh)
+    assert abs(Om - 1.0) < 1e-12
+
 
     # loop phase checks (Eq. 27, 29)
     chi = 0.5
@@ -92,6 +100,41 @@ def acoustic_ds2_1d(dt: float, dx: float, v0: float, c0: float, rho0: float = 1.
         raise ValueError("c0 must be non-zero")
     return (rho0 / c0) * (-(c0 * c0) * (dt * dt) + (dx - v0 * dt) * (dx - v0 * dt))
 
+def find_horizon_x(xs: list[float], vs: list[float], c0: float) -> float:
+    """Find x_H where v0 crosses c0 by linear interpolation (v0(x_H)=c0)."""
+    if len(xs) != len(vs) or len(xs) < 2:
+        raise ValueError("xs and vs must have same length >= 2")
+    for i in range(len(xs) - 1):
+        v1, v2 = vs[i], vs[i + 1]
+        if (v1 - c0) == 0.0:
+            return xs[i]
+        if (v1 - c0) * (v2 - c0) <= 0.0:
+            # linear interpolation between (x1,v1) and (x2,v2)
+            x1, x2 = xs[i], xs[i + 1]
+            if v2 == v1:
+                return x1
+            t = (c0 - v1) / (v2 - v1)
+            return x1 + t * (x2 - x1)
+    raise ValueError("no horizon crossing found")
+
+
+def omega_h(xs: list[float], vs: list[float], x_h: float) -> float:
+    """Ω_H ≈ dv0/dx at x_h using nearest segment slope (Eq. 30)."""
+    if len(xs) != len(vs) or len(xs) < 2:
+        raise ValueError("xs and vs must have same length >= 2")
+    # find nearest interval
+    best_i = 0
+    best_d = float("inf")
+    for i in range(len(xs) - 1):
+        xm = 0.5 * (xs[i] + xs[i + 1])
+        d = abs(xm - x_h)
+        if d < best_d:
+            best_d = d
+            best_i = i
+    dx = xs[best_i + 1] - xs[best_i]
+    if dx == 0.0:
+        raise ValueError("duplicate xs points")
+    return (vs[best_i + 1] - vs[best_i]) / dx
 
 
 def now_iso() -> str:
