@@ -58,14 +58,20 @@ def main() -> int:
     results_dir = ensure_results_dir(outdir)
 
     try:
+
         if not ENGINE_PATH.exists():
             raise FileNotFoundError(f"REL engine not found: {ENGINE_PATH}")
         env = os.environ.copy()
         
         rel_input_json = env.get("REL_INPUT_JSON", "").strip()
         rel_mode = env.get("REL_MODE", "").strip().lower()
-
-        if rel_input_json and rel_mode == "null_speeds":
+        
+        if rel_input_json and rel_mode == "profile":
+            out_json = str(outdir / "rel_calc_out.json")
+            cmd = ["python", "-X", "utf8", str(ENGINE_PATH),
+                   "--calc-profile", rel_input_json,
+                   "--out", out_json]
+        elif rel_input_json and rel_mode == "null_speeds":
             out_json = str(outdir / "rel_calc_out.json")
             cmd = ["python", "-X", "utf8", str(ENGINE_PATH),
                    "--calc-null-speeds", rel_input_json,
