@@ -63,15 +63,19 @@ def main() -> int:
         env = os.environ.copy()
         
         rel_input_json = env.get("REL_INPUT_JSON", "").strip()
+        rel_mode = env.get("REL_MODE", "").strip().lower()
 
-        if rel_input_json:
-            # Real calc mode (does NOT change contract format; only affects engine call)
+        if rel_input_json and rel_mode == "null_speeds":
+            out_json = str(outdir / "rel_calc_out.json")
+            cmd = ["python", "-X", "utf8", str(ENGINE_PATH),
+                   "--calc-null-speeds", rel_input_json,
+                   "--out", out_json]
+        elif rel_input_json and (rel_mode == "" or rel_mode == "horizon"):
             out_json = str(outdir / "rel_calc_out.json")
             cmd = ["python", "-X", "utf8", str(ENGINE_PATH),
                    "--calc-horizon", rel_input_json,
                    "--out", out_json]
         else:
-            # Default: demo mode (stable for smoke)
             cmd = ["python", "-X", "utf8", str(ENGINE_PATH), "--demo", "--outdir", str(outdir)]
 
         env["PYTHONUTF8"] = "1"
@@ -90,7 +94,11 @@ def main() -> int:
                     "horizon_x": calc.get("horizon_x"),
                     "Omega_H": calc.get("Omega_H"),
                     "T_H_coeff": calc.get("T_H_coeff"),
+                    "v0_at_x": calc.get("v0_at_x"),
+                    "dxdt_minus": calc.get("dxdt_minus"),
+                    "dxdt_plus": calc.get("dxdt_plus"),
                 }
+                
         except Exception:
             calc_metrics = {"calc_metrics_error": "failed_to_parse_rel_calc_out_json"}
 
