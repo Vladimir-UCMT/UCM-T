@@ -60,9 +60,20 @@ def main() -> int:
     try:
         if not ENGINE_PATH.exists():
             raise FileNotFoundError(f"REL engine not found: {ENGINE_PATH}")
-
-        cmd = ["python", "-X", "utf8", str(ENGINE_PATH), "--demo", "--outdir", str(outdir)]
         env = os.environ.copy()
+        
+        rel_input_json = env.get("REL_INPUT_JSON", "").strip()
+
+        if rel_input_json:
+            # Real calc mode (does NOT change contract format; only affects engine call)
+            out_json = str(outdir / "rel_calc_out.json")
+            cmd = ["python", "-X", "utf8", str(ENGINE_PATH),
+                   "--calc-horizon", rel_input_json,
+                   "--out", out_json]
+        else:
+            # Default: demo mode (stable for smoke)
+            cmd = ["python", "-X", "utf8", str(ENGINE_PATH), "--demo", "--outdir", str(outdir)]
+
         env["PYTHONUTF8"] = "1"
         env["PYTHONIOENCODING"] = "utf-8"
 
@@ -74,7 +85,8 @@ def main() -> int:
             "status": "ok" if ok else "fail",
             "score": 1.0 if ok else 0.0,
             "metric_value": float(proc.returncode),
-            "summary": "REL demo wrapper run",
+            "summary": "REL calc-horizon wrapper run" if rel_input_json else "REL demo wrapper run",
+
         }]
 
         stdout_tail = "\n".join((proc.stdout or "").splitlines()[-20:])
