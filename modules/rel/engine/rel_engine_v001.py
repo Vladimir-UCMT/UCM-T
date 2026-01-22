@@ -58,6 +58,14 @@ def _selftest() -> None:
     c0 = 2.0
     w = omega_forward(k, v0, c0)
     vg = group_velocity(k, v0, c0)
+        # acoustic interval checks (Eq. 24), 1D
+    ds2 = acoustic_ds2_1d(dt=1.0, dx=0.0, v0=0.0, c0=2.0, rho0=1.0)
+    # expected: (1/2)*(-4*1 + 0) = -2
+    assert abs(ds2 + 2.0) < 1e-12
+
+    ds2b = acoustic_ds2_1d(dt=1.0, dx=2.0, v0=2.0, c0=2.0, rho0=1.0)
+    # dx - v0 dt = 0 => same as above
+    assert abs(ds2b + 2.0) < 1e-12
 
     # expected: v0·k=30, c0|k|=10 => ω=40
     assert abs(w - 40.0) < 1e-12
@@ -75,6 +83,16 @@ def _selftest() -> None:
     phi_sag = sagnac_phase(omega=4.0, chi=chi, c0=2.0, omega_dot_area=3.0)
     assert abs(phi_sag - 12.0) < 1e-12
 
+def acoustic_ds2_1d(dt: float, dx: float, v0: float, c0: float, rho0: float = 1.0) -> float:
+    """
+    Acoustic interval in 1D (Eq. 24):
+      ds^2 = (rho0/c0) * ( -c0^2 dt^2 + (dx - v0 dt)^2 )
+    """
+    if c0 == 0.0:
+        raise ValueError("c0 must be non-zero")
+    return (rho0 / c0) * (-(c0 * c0) * (dt * dt) + (dx - v0 * dt) * (dx - v0 * dt))
+
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -89,6 +107,7 @@ def main() -> int:
 
     if args.selftest:
         _selftest()
+        
         print("[rel] selftest: OK")
         return 0
 
