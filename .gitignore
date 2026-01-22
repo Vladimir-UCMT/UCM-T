@@ -225,3 +225,7 @@ nv_demo.csv
 # local scratch
 _TMP/
 
+
+__pycache__/
+*.pyc
+

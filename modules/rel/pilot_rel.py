@@ -1,0 +1,152 @@
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+ENGINE_PATH = REPO_ROOT / "modules" / "rel" / "engine" / "rel_engine_v001.py"
+
+sys.path.insert(0, str(REPO_ROOT))
+from tools.contract_meta import contract_meta  # noqa: E402
+
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def ensure_results_dir(outdir: Path) -> Path:
+    results_dir = outdir / "results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+    return results_dir
+
+
+def write_json(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def write_results_items(results_dir: Path, rows: list[dict]) -> None:
+    # Contract-required columns for the validator:
+    fieldnames = ["item_id", "status", "score", "metric_value", "summary"]
+    p = results_dir / "results_items.csv"
+    with p.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        for r in rows:
+            w.writerow({
+                "item_id": r.get("item_id", ""),
+                "status": r.get("status", ""),
+                "score": r.get("score", ""),
+                "metric_value": r.get("metric_value", ""),
+                "summary": r.get("summary", ""),
+            })
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="UCM-T REL wrapper (results contract output).")
+    ap.add_argument("--outdir", required=True, help="Run output directory (will create results/ inside).")
+    ap.add_argument("--tag", default="REL_DEMO", help="Run tag/name for bookkeeping.")
+    args = ap.parse_args()
+
+    outdir = Path(args.outdir).resolve()
+    outdir.mkdir(parents=True, exist_ok=True)
+    results_dir = ensure_results_dir(outdir)
+
+    try:
+        if not ENGINE_PATH.exists():
+            raise FileNotFoundError(f"REL engine not found: {ENGINE_PATH}")
+
+        cmd = ["python", "-X", "utf8", str(ENGINE_PATH), "--demo", "--outdir", str(outdir)]
+        env = os.environ.copy()
+        env["PYTHONUTF8"] = "1"
+        env["PYTHONIOENCODING"] = "utf-8"
+
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=env)
+        ok = (proc.returncode == 0)
+
+        rows = [{
+            "item_id": "DEMO",
+            "status": "ok" if ok else "fail",
+            "score": 1.0 if ok else 0.0,
+            "metric_value": float(proc.returncode),
+            "summary": "REL demo wrapper run",
+        }]
+
+        stdout_tail = "\n".join((proc.stdout or "").splitlines()[-20:])
+        stderr_tail = "\n".join((proc.stderr or "").splitlines()[-20:])
+
+        global_payload = {
+            "schema": "ucm_results_contract_v1",
+            "module": "rel",
+            "timestamp_utc": now_iso(),
+            "status": "ok" if ok else "error",
+            "engine_returncode": int(proc.returncode),
+            "n_items": len(rows),
+            "tag": args.tag,
+            "stdout_tail": stdout_tail,
+            "stderr_tail": stderr_tail,
+            **contract_meta(wrapper_version="calib-v2.3.1"),
+        }
+        if not ok:
+            global_payload["error"] = f"engine_returncode={proc.returncode}"
+
+        write_results_items(results_dir, rows)
+        write_json(results_dir / "results_global.json", global_payload)
+
+        # Wrapper publish status (0 means publish succeeded)
+        write_json(results_dir / "wrapper_status.json", {
+            "schema": "ucm_wrapper_status_v1",
+            "status": "ok" if ok else "error",
+            "returncode": 0,
+            "has_items_csv": True,
+            "out": "",
+            "error": "" if ok else global_payload.get("error", ""),
+            "published_from": "pilot_rel.py",
+        })
+
+        return 0
+
+    except Exception as e:
+        err = f"{type(e).__name__}: {e}"
+        rows = [{
+            "item_id": "__error__",
+            "status": "fail",
+            "score": 0.0,
+            "metric_value": 1.0,
+            "summary": err,
+        }]
+        global_payload = {
+            "schema": "ucm_results_contract_v1",
+            "module": "rel",
+            "timestamp_utc": now_iso(),
+            "status": "error",
+            "engine_returncode": 1,
+            "n_items": 1,
+            "error": err,
+            **contract_meta(wrapper_version="calib-v2.3.1"),
+        }
+
+        try:
+            write_results_items(results_dir, rows)
+            write_json(results_dir / "results_global.json", global_payload)
+            write_json(results_dir / "wrapper_status.json", {
+                "schema": "ucm_wrapper_status_v1",
+                "status": "error",
+                "returncode": 0,
+                "has_items_csv": True,
+                "out": "",
+                "error": err,
+                "published_from": "pilot_rel.py",
+            })
+            return 0
+        except Exception:
+            return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
