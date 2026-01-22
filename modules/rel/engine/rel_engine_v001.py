@@ -59,6 +59,34 @@ def acoustic_ds2_1d(dt: float, dx: float, v0: float, c0: float, rho0: float = 1.
         raise ValueError("c0 must be non-zero")
     return (rho0 / c0) * (-(c0 * c0) * (dt * dt) + (dx - v0 * dt) * (dx - v0 * dt))
 
+def acoustic_metric_g_1d(v0: float, c0: float, rho0: float = 1.0) -> list[list[float]]:
+    """g_{μν} for (t,x) in 1D (Eq. 22)."""
+    if c0 == 0.0:
+        raise ValueError("c0 must be non-zero")
+    pref = rho0 / c0
+    return [
+        [pref * (-(c0 * c0 - v0 * v0)), pref * (-v0)],
+        [pref * (-v0), pref * 1.0],
+    ]
+
+
+def acoustic_metric_ginv_1d(v0: float, c0: float, rho0: float = 1.0) -> list[list[float]]:
+    """g^{μν} for (t,x) in 1D (Eq. 23)."""
+    if c0 == 0.0 or rho0 == 0.0:
+        raise ValueError("c0 and rho0 must be non-zero")
+    pref = 1.0 / (rho0 * c0)
+    return [
+        [pref * (-1.0), pref * (-v0)],
+        [pref * (-v0), pref * (c0 * c0 - v0 * v0)],
+    ]
+
+
+def _mat2_mul(a: list[list[float]], b: list[list[float]]) -> list[list[float]]:
+    return [
+        [a[0][0] * b[0][0] + a[0][1] * b[1][0], a[0][0] * b[0][1] + a[0][1] * b[1][1]],
+        [a[1][0] * b[0][0] + a[1][1] * b[1][0], a[1][0] * b[0][1] + a[1][1] * b[1][1]],
+    ]
+
 
 def find_horizon_x(xs: list[float], vs: list[float], c0: float) -> float:
     """Find x_H where v0 crosses c0 by linear interpolation (v0(x_H)=c0)."""
@@ -200,6 +228,18 @@ def _selftest() -> None:
         k2[i] -= eps
         num = (_ham_F((k1[0], k1[1], k1[2]), v0, c0, omega) - _ham_F((k2[0], k2[1], k2[2]), v0, c0, omega)) / (2.0 * eps)
         assert abs(p[i] - num) < 1e-6
+
+    # Eq.22-23: g * ginv = I (numeric check)
+    v0 = 0.3
+    c0 = 2.0
+    rho0 = 1.5
+    g = acoustic_metric_g_1d(v0, c0, rho0)
+    gi = acoustic_metric_ginv_1d(v0, c0, rho0)
+    I = _mat2_mul(g, gi)
+    assert abs(I[0][0] - 1.0) < 1e-12
+    assert abs(I[0][1] - 0.0) < 1e-12
+    assert abs(I[1][0] - 0.0) < 1e-12
+    assert abs(I[1][1] - 1.0) < 1e-12
 
 
 def now_iso() -> str:
