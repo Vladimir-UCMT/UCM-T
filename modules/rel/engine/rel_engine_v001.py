@@ -50,6 +50,64 @@ def sagnac_phase(omega: float, chi: float, c0: float, omega_dot_area: float) -> 
         raise ValueError("chi and c0 must be non-zero")
     return 2.0 * omega * omega_dot_area / (chi * c0 * c0)
 
+def acoustic_ds2_1d(dt: float, dx: float, v0: float, c0: float, rho0: float = 1.0) -> float:
+    """
+    Acoustic interval in 1D (Eq. 24):
+      ds^2 = (rho0/c0) * ( -c0^2 dt^2 + (dx - v0 dt)^2 )
+    """
+    if c0 == 0.0:
+        raise ValueError("c0 must be non-zero")
+    return (rho0 / c0) * (-(c0 * c0) * (dt * dt) + (dx - v0 * dt) * (dx - v0 * dt))
+
+
+def find_horizon_x(xs: list[float], vs: list[float], c0: float) -> float:
+    """Find x_H where v0 crosses c0 by linear interpolation (v0(x_H)=c0)."""
+    if len(xs) != len(vs) or len(xs) < 2:
+        raise ValueError("xs and vs must have same length >= 2")
+    for i in range(len(xs) - 1):
+        v1, v2 = vs[i], vs[i + 1]
+        if (v1 - c0) == 0.0:
+            return xs[i]
+        if (v1 - c0) * (v2 - c0) <= 0.0:
+            # linear interpolation between (x1,v1) and (x2,v2)
+            x1, x2 = xs[i], xs[i + 1]
+            if v2 == v1:
+                return x1
+            t = (c0 - v1) / (v2 - v1)
+            return x1 + t * (x2 - x1)
+    raise ValueError("no horizon crossing found")
+
+
+def omega_h(xs: list[float], vs: list[float], x_h: float) -> float:
+    """Ω_H ≈ dv0/dx at x_h using nearest segment slope (Eq. 30)."""
+    if len(xs) != len(vs) or len(xs) < 2:
+        raise ValueError("xs and vs must have same length >= 2")
+    # find nearest interval
+    best_i = 0
+    best_d = float("inf")
+    for i in range(len(xs) - 1):
+        xm = 0.5 * (xs[i] + xs[i + 1])
+        d = abs(xm - x_h)
+        if d < best_d:
+            best_d = d
+            best_i = i
+    dx = xs[best_i + 1] - xs[best_i]
+    if dx == 0.0:
+        raise ValueError("duplicate xs points")
+    return (vs[best_i + 1] - vs[best_i]) / dx
+
+def hawking_temperature(
+    omega_h_val: float,
+    hbar: float | None = None,
+    k_b: float | None = None,
+) -> float:
+    """
+    T_H = (ħ / (2π k_B)) * Ω_H  (Eq. 31).
+    If hbar/k_b not provided, returns (1/(2π)) * Ω_H (i.e., coefficient-only).
+    """
+    if hbar is None or k_b is None:
+        return omega_h_val / (2.0 * math.pi)
+    return (hbar * omega_h_val) / (2.0 * math.pi * k_b)
 
 def _selftest() -> None:
     # simple numeric check (not a physics test suite)
@@ -91,50 +149,9 @@ def _selftest() -> None:
     phi_sag = sagnac_phase(omega=4.0, chi=chi, c0=2.0, omega_dot_area=3.0)
     assert abs(phi_sag - 12.0) < 1e-12
 
-def acoustic_ds2_1d(dt: float, dx: float, v0: float, c0: float, rho0: float = 1.0) -> float:
-    """
-    Acoustic interval in 1D (Eq. 24):
-      ds^2 = (rho0/c0) * ( -c0^2 dt^2 + (dx - v0 dt)^2 )
-    """
-    if c0 == 0.0:
-        raise ValueError("c0 must be non-zero")
-    return (rho0 / c0) * (-(c0 * c0) * (dt * dt) + (dx - v0 * dt) * (dx - v0 * dt))
-
-def find_horizon_x(xs: list[float], vs: list[float], c0: float) -> float:
-    """Find x_H where v0 crosses c0 by linear interpolation (v0(x_H)=c0)."""
-    if len(xs) != len(vs) or len(xs) < 2:
-        raise ValueError("xs and vs must have same length >= 2")
-    for i in range(len(xs) - 1):
-        v1, v2 = vs[i], vs[i + 1]
-        if (v1 - c0) == 0.0:
-            return xs[i]
-        if (v1 - c0) * (v2 - c0) <= 0.0:
-            # linear interpolation between (x1,v1) and (x2,v2)
-            x1, x2 = xs[i], xs[i + 1]
-            if v2 == v1:
-                return x1
-            t = (c0 - v1) / (v2 - v1)
-            return x1 + t * (x2 - x1)
-    raise ValueError("no horizon crossing found")
-
-
-def omega_h(xs: list[float], vs: list[float], x_h: float) -> float:
-    """Ω_H ≈ dv0/dx at x_h using nearest segment slope (Eq. 30)."""
-    if len(xs) != len(vs) or len(xs) < 2:
-        raise ValueError("xs and vs must have same length >= 2")
-    # find nearest interval
-    best_i = 0
-    best_d = float("inf")
-    for i in range(len(xs) - 1):
-        xm = 0.5 * (xs[i] + xs[i + 1])
-        d = abs(xm - x_h)
-        if d < best_d:
-            best_d = d
-            best_i = i
-    dx = xs[best_i + 1] - xs[best_i]
-    if dx == 0.0:
-        raise ValueError("duplicate xs points")
-    return (vs[best_i + 1] - vs[best_i]) / dx
+        # Hawking analogue temperature proportionality (Eq. 31)
+    th = hawking_temperature(omega_h_val=2.0)
+    assert abs(th - (2.0 / (2.0 * math.pi))) < 1e-12
 
 
 def now_iso() -> str:
