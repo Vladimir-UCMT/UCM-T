@@ -79,6 +79,22 @@ def main() -> int:
 
         proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=env)
         ok = (proc.returncode == 0)
+        
+        # If real-mode produced an output json, attach key metrics to global payload
+        calc_metrics = {}
+        try:
+            out_json_path = outdir / "rel_calc_out.json"
+            if out_json_path.exists():
+                calc = json.loads(out_json_path.read_text(encoding="utf-8-sig"))
+                calc_metrics = {
+                    "horizon_x": calc.get("horizon_x"),
+                    "Omega_H": calc.get("Omega_H"),
+                    "T_H_coeff": calc.get("T_H_coeff"),
+                }
+        except Exception:
+            calc_metrics = {"calc_metrics_error": "failed_to_parse_rel_calc_out_json"}
+
+        
 
         rows = [{
             "item_id": "DEMO",
@@ -102,6 +118,7 @@ def main() -> int:
             "tag": args.tag,
             "stdout_tail": stdout_tail,
             "stderr_tail": stderr_tail,
+            **calc_metrics,
             **contract_meta(wrapper_version="calib-v2.3.1"),
         }
         if not ok:
