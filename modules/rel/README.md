@@ -94,3 +94,21 @@ $env:REL_MODE = "null_speeds"
 python modules/rel/pilot_rel.py --outdir .\RUN --tag REL_NS
 Remove-Item Env:REL_INPUT_JSON
 Remove-Item Env:REL_MODE
+
+## Quick check: profile mode (horizon)
+
+```powershell
+New-Item -ItemType Directory -Force C:\UCM\TMP_REL | Out-Null
+python -c "import json; json.dump({'xs':[0,1,2],'vs':[0,2,4],'c0':2}, open(r'C:\UCM\TMP_REL\in_horizon.json','w',encoding='utf-8'), ensure_ascii=False)"
+
+$env:REL_INPUT_JSON = "C:\UCM\TMP_REL\in_horizon.json"
+$env:REL_MODE = "profile"
+python -X utf8 -u C:\UCM\UCM-T\modules\rel\pilot_rel.py --outdir C:\UCM\TMP_REL\RUN_REL_HOR --tag REL_HOR
+Remove-Item Env:REL_INPUT_JSON,Env:REL_MODE -ErrorAction SilentlyContinue
+Expected in results/results_global.json:
+
+horizon_x = 1.0
+
+Omega_H = 2.0
+
+T_H_coeff = 1/pi
