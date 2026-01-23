@@ -195,6 +195,20 @@ def analyze_profile_1d(inp: dict) -> dict:
     c0 = float(inp["c0"])
 
     out = {"input": {"xs": xs, "vs": vs, "c0": c0}}
+
+        # --- loop phase coefficient (Eq.27): phase_loop_coeff = omega/(chi*c0^2), optional
+    try:
+        omega = float(inp.get("omega", 0.0))
+        chi = float(inp.get("chi", 0.0))
+        if omega != 0.0 and chi != 0.0 and c0 > 0.0:
+            out.update({
+                "omega": omega,
+                "chi": chi,
+                "phase_loop_coeff": omega / (chi * c0 * c0),
+            })
+    except Exception:
+        pass
+
     
     # --- dispersion scales (Eq.39) + Lorentz-domain bound (Eq.45), optional
     try:

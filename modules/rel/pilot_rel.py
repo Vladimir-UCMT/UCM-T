@@ -114,6 +114,7 @@ def main() -> int:
                     "l_s": calc.get("l_s"),
                     "k_max_for_eps": calc.get("k_max_for_eps"),
                     "eps": calc.get("eps"),
+                    "phase_loop_coeff": calc.get("phase_loop_coeff"),
                 }
                 
         except Exception:
