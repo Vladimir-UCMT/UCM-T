@@ -112,3 +112,14 @@ horizon_x = 1.0
 Omega_H = 2.0
 
 T_H_coeff = 1/pi
+
+### Optional dispersion inputs (paper v2)
+
+For `REL_MODE=profile` you may pass (optional) parameters:
+- `rho_inf` (or `rho_infty`)
+- `kappa`
+- `kappa_s`
+- `eps` (default 0.01)
+
+If provided, engine reports:
+- `l_kappa`, `l_s`, `k_max_for_eps`
