@@ -123,3 +123,13 @@ For `REL_MODE=profile` you may pass (optional) parameters:
 
 If provided, engine reports:
 - `l_kappa`, `l_s`, `k_max_for_eps`
+
+### Optional loop-phase inputs (paper v2)
+
+Optional:
+- `omega`
+- `chi`
+
+If provided, engine reports:
+- `phase_loop_coeff = omega/(chi*c0^2)`
+
