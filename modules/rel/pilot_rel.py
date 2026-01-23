@@ -110,6 +110,10 @@ def main() -> int:
                     "v0_at_x": calc.get("v0_at_x"),
                     "dxdt_minus": calc.get("dxdt_minus"),
                     "dxdt_plus": calc.get("dxdt_plus"),
+                    "l_kappa": calc.get("l_kappa"),
+                    "l_s": calc.get("l_s"),
+                    "k_max_for_eps": calc.get("k_max_for_eps"),
+                    "eps": calc.get("eps"),
                 }
                 
         except Exception:

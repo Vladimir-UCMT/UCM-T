@@ -195,6 +195,35 @@ def analyze_profile_1d(inp: dict) -> dict:
     c0 = float(inp["c0"])
 
     out = {"input": {"xs": xs, "vs": vs, "c0": c0}}
+    
+    # --- dispersion scales (Eq.39) + Lorentz-domain bound (Eq.45), optional
+    try:
+        rho_inf = float(inp.get("rho_inf", inp.get("rho_infty", 0.0)))
+        kappa = float(inp.get("kappa", 0.0))
+        kappa_s = float(inp.get("kappa_s", inp.get("kappas", 0.0)))
+        eps = float(inp.get("eps", 0.01))
+
+        if rho_inf > 0.0 and c0 > 0.0 and kappa > 0.0:
+            l_kappa = math.sqrt(kappa / (rho_inf * c0 * c0))      # ℓκ^2 = κ/(ρ∞ c0^2)
+            k_max = math.sqrt(2.0 * eps / 3.0) / l_kappa          # kℓκ <= sqrt(2ε/3)
+            out.update({
+                "rho_inf": rho_inf,
+                "kappa": kappa,
+                "eps": eps,
+                "l_kappa": l_kappa,
+                "k_lkappa_max_for_eps": math.sqrt(2.0 * eps / 3.0),
+                "k_max_for_eps": k_max,
+            })
+
+        if rho_inf > 0.0 and c0 > 0.0 and kappa_s > 0.0:
+            l_s = (kappa_s / (rho_inf * c0 * c0)) ** 0.25         # ℓs^4 = κs/(ρ∞ c0^2)
+            out.update({
+                "kappa_s": kappa_s,
+                "l_s": l_s,
+            })
+    except Exception:
+        pass
+
 
     # horizon-related
     try:
