@@ -65,6 +65,13 @@ def main() -> int:
         
         rel_input_json = env.get("REL_INPUT_JSON", "").strip()
         rel_mode = env.get("REL_MODE", "").strip().lower()
+        rel_input_basename = Path(rel_input_json).name if rel_input_json else ""
+        rel_mode_effective = "demo"
+        if rel_input_json:
+            rel_mode_effective = rel_mode if rel_mode else "horizon"
+            if rel_mode_effective not in {"horizon", "profile", "null_speeds"}:
+                rel_mode_effective = "demo"
+        
         
         if rel_input_json and rel_mode == "profile":
             out_json = str(outdir / "rel_calc_out.json")
@@ -132,6 +139,9 @@ def main() -> int:
             "tag": args.tag,
             "stdout_tail": stdout_tail,
             "stderr_tail": stderr_tail,
+            "engine_cmd": cmd,
+            "rel_mode": rel_mode_effective,
+            "rel_input_json_basename": rel_input_basename,
             **calc_metrics,
             **contract_meta(wrapper_version="calib-v2.3.1"),
         }
