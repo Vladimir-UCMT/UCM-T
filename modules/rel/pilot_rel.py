@@ -124,6 +124,8 @@ def main() -> int:
                     "phase_ab": calc.get("phase_ab"),
                     "n": calc.get("n"),
                     "Gamma0": calc.get("Gamma0"),
+                    "Omega0": calc.get("Omega0"),
+                    "Omega0_over_c0": calc.get("Omega0_over_c0"),
                 }
                 
         except Exception:

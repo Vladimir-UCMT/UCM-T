@@ -232,6 +232,7 @@ def analyze_profile_1d(inp: dict) -> dict:
     except Exception:
         pass
 
+
     # --- optional: AB-like special case (Eq.28): phase_ab = phase_loop_coeff * Gamma
     try:
         Gamma = float(inp.get("Gamma", inp.get("circulation", 0.0)))
@@ -294,6 +295,17 @@ def analyze_profile_1d(inp: dict) -> dict:
             "Omega_H": Om,
             "T_H_coeff": hawking_temperature(Om),
         })
+    except Exception:
+        pass
+
+    # --- optional: vorticity link (∇×β = -Omega0/c0)
+    try:
+        Omega0 = float(inp.get("Omega0", inp.get("vorticity", 0.0)))
+        if Omega0 != 0.0 and c0 > 0.0:
+            out.update({
+                "Omega0": Omega0,
+                "Omega0_over_c0": Omega0 / c0,
+            })
     except Exception:
         pass
 
