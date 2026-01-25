@@ -117,6 +117,9 @@ def main() -> int:
                     "phase_loop_coeff": calc.get("phase_loop_coeff"),
                     "loop_int_vdl": calc.get("loop_int_vdl"),
                     "phase_loop": calc.get("phase_loop"),
+                    "phase_sagnac": calc.get("phase_sagnac"),
+                    "Omega": calc.get("Omega"),
+                    "area": calc.get("area"),
                 }
                 
         except Exception:

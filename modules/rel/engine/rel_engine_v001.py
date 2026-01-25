@@ -219,6 +219,19 @@ def analyze_profile_1d(inp: dict) -> dict:
     except Exception:
         pass
 
+    # --- optional: Sagnac special case (Eq.29): phase_sagnac = (2*omega/(chi*c0^2)) * (Omega*area)
+    try:
+        Omega = float(inp.get("Omega", inp.get("omega_rot", 0.0)))
+        area = float(inp.get("area", inp.get("A", 0.0)))
+        if Omega != 0.0 and area != 0.0 and "phase_loop_coeff" in out and out["phase_loop_coeff"] is not None:
+            out.update({
+                "Omega": Omega,
+                "area": area,
+                "phase_sagnac": 2.0 * out["phase_loop_coeff"] * (Omega * area),
+            })
+    except Exception:
+        pass
+
     # --- dispersion scales (Eq.39) + Lorentz-domain bound (Eq.45), optional
     try:
         rho_inf = float(inp.get("rho_inf", inp.get("rho_infty", 0.0)))
