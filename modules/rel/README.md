@@ -156,4 +156,13 @@ Optional:
 If provided (and `phase_loop_coeff` available), engine reports:
 - `phase_ab = phase_loop_coeff * Gamma`
 
+Optional (quantized circulation):
+- `n`
+- `Gamma0`
+
+If `Gamma` is not provided but `n` and `Gamma0` are, engine uses:
+- `Gamma = n*Gamma0`
+and can report `phase_ab` accordingly.
+
+
 
