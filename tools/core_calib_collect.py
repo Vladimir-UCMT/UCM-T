@@ -75,11 +75,15 @@ def _scan_module_dir(module_dir: Path) -> ModuleScan:
 
 
 def _flatten_primitives(d: Dict[str, Any]) -> Dict[str, Any]:
-    """Keep only top-level primitive scalars (no dict/list)."""
+    """Keep only top-level scalar metrics suitable for CSV."""
     out: Dict[str, Any] = {}
     for k, v in d.items():
-        if isinstance(v, (str, int, float, bool)) or v is None:
+        if v is None or isinstance(v, (int, float, bool)):
             out[k] = v
+        elif isinstance(v, str):
+            # keep only short single-line strings (e.g. bench tags), drop logs
+            if ("\n" not in v) and ("\r" not in v) and (len(v) <= 120):
+                out[k] = v
     return out
 
 
@@ -90,6 +94,29 @@ def _csv_safe(v: Any) -> str:
         return "true" if v else "false"
     return str(v)
 
+def _load_aliases(path: Optional[str]) -> Dict[str, Dict[str, str]]:
+    """
+    Return: { module_name: { alias_key -> preferred_key } }
+    Uses tools/core_calib_aliases.json structure:
+      modules.<module>.preferred_outputs.<preferred> = [aliases...]
+    """
+    if not path:
+        return {}
+    p = Path(path).expanduser().resolve()
+    if not p.exists():
+        raise SystemExit(f"aliases file not found: {p}")
+    data = _read_json(p)
+    modules = data.get("modules", {})
+    out: Dict[str, Dict[str, str]] = {}
+    for mod, block in modules.items():
+        pref_out = (block or {}).get("preferred_outputs", {}) or {}
+        rev: Dict[str, str] = {}
+        for preferred, aliases in pref_out.items():
+            for a in (aliases or []):
+                rev[str(a)] = str(preferred)
+        out[str(mod)] = rev
+    return out
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Collect results_global.json across module runs (no optimization).")
@@ -99,6 +126,12 @@ def main() -> int:
         default=r"C:\UCM\RUNS",
         help=r"Where to create CORE_CALIB_COLLECT_<timestamp> (default: C:\UCM\RUNS).",
     )
+    ap.add_argument(
+    "--aliases",
+    default=None,
+    help="Path to core_calib_aliases.json (optional). Used to normalize rg__ keys.",
+)
+
     args = ap.parse_args()
 
     run_dir = Path(args.run_dir).expanduser().resolve()
@@ -109,7 +142,9 @@ def main() -> int:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir = out_root / f"CORE_CALIB_COLLECT_{ts}"
     out_dir.mkdir(parents=True, exist_ok=False)
-
+    alias_rev = _load_aliases(args.aliases)
+    out_root = Path(args.out_root).expanduser()
+    
     scans: List[ModuleScan] = []
     rows: List[Dict[str, Any]] = []
     all_keys: List[str] = []
@@ -132,10 +167,12 @@ def main() -> int:
             try:
                 rg = _read_json(scan.results_global_path)
                 flat = _flatten_primitives(rg)
+                rev = alias_rev.get(scan.module, {})
                 for k, v in flat.items():
-                    # avoid collisions with our fixed columns
-                    key = f"rg__{k}"
-                    row[key] = v
+                    k2 = rev.get(k, k)  # normalize
+                    key = f"rg__{k2}"
+                    if key not in row:  # prefer first occurrence (avoid overwrite)
+                        row[key] = v
             except Exception as e:
                 row["status"] = "bad_results_global_json"
                 row["error"] = f"{type(e).__name__}: {e}"
@@ -183,6 +220,8 @@ def main() -> int:
                         "module_dir": str(s.module_dir),
                         "wrapper_status": str(s.wrapper_status_path) if s.wrapper_status_path else None,
                         "results_global": str(s.results_global_path) if s.results_global_path else None,
+                        "aliases_path": str(Path(args.aliases).expanduser().resolve()) if args.aliases else None,
+
                         "contract_ok": s.contract_ok,
                         "status": s.status,
                         "error": s.error,
