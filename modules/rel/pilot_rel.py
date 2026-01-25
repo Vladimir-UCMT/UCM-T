@@ -107,6 +107,7 @@ def main() -> int:
                     "c0": calc.get("c0"),
                     "rho_inf": calc.get("rho_inf"),
                     "kappa": calc.get("kappa"),
+                    "kappa_s": calc.get("kappa_s"),                    
                     "horizon_x": calc.get("horizon_x"),
                     "Omega_H": calc.get("Omega_H"),
                     "T_H_coeff": calc.get("T_H_coeff"),
@@ -153,6 +154,13 @@ def main() -> int:
                         calc_metrics["kappa"] = float(os.environ.get("UCM_KAPPA", "0.0"))
                     except Exception:
                         calc_metrics["kappa"] = 0.0
+
+                # Fallback for kappa_s (demo/smoke): take from env if missing
+                if calc_metrics.get("kappa_s") is None:
+                    try:
+                        calc_metrics["kappa_s"] = float(os.environ.get("UCM_KAPPA_S", "0.0"))
+                    except Exception:
+                        calc_metrics["kappa_s"] = 0.0
 
               
         except Exception:

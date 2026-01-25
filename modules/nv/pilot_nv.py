@@ -117,6 +117,12 @@ def main() -> int:
         except Exception:
             kappa = 0.0
 
+        # shared medium param (Phase 0 inventory): kappa_s
+        try:
+            kappa_s = float(env.get("UCM_KAPPA_S", "0.0"))
+        except Exception:
+            kappa_s = 0.0
+
 
         env["PYTHONUTF8"] = "1"
         env["PYTHONIOENCODING"] = "utf-8"
@@ -150,6 +156,7 @@ def main() -> int:
             "c0": c0,
             "rho_inf": rho_inf,            
             "kappa": kappa,
+            "kappa_s": kappa_s,
 
             **contract_meta(wrapper_version="calib-v2.3"),
         }
