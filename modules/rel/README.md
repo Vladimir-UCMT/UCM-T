@@ -133,3 +133,10 @@ Optional:
 If provided, engine reports:
 - `phase_loop_coeff = omega/(chi*c0^2)`
 
+Optional:
+- `loop_int_vdl` (user-supplied value of ∮ v·dl)
+
+If provided (and `phase_loop_coeff` is available), engine reports:
+- `phase_loop = phase_loop_coeff * loop_int_vdl`
+
+
