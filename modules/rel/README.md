@@ -183,4 +183,8 @@ If provided, engine reports:
 - `Omega0_over_c0 = Omega0/c0`
 (related to ∇×β = -Omega0/c0).
 
+## End-to-end example
+
+See `modules/rel/examples/real_demo.json` and run:
+`powershell -ExecutionPolicy Bypass -File modules/rel/tests/test_real_demo.ps1`
 
