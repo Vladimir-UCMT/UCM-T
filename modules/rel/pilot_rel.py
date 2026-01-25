@@ -120,6 +120,8 @@ def main() -> int:
                     "phase_sagnac": calc.get("phase_sagnac"),
                     "Omega": calc.get("Omega"),
                     "area": calc.get("area"),
+                    "Gamma": calc.get("Gamma"),
+                    "phase_ab": calc.get("phase_ab"),
                 }
                 
         except Exception:

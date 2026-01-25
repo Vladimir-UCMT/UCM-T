@@ -219,6 +219,17 @@ def analyze_profile_1d(inp: dict) -> dict:
     except Exception:
         pass
 
+    # --- optional: AB-like special case (Eq.28): phase_ab = phase_loop_coeff * Gamma
+    try:
+        Gamma = float(inp.get("Gamma", inp.get("circulation", 0.0)))
+        if Gamma != 0.0 and "phase_loop_coeff" in out and out["phase_loop_coeff"] is not None:
+            out.update({
+                "Gamma": Gamma,
+                "phase_ab": out["phase_loop_coeff"] * Gamma,
+            })
+    except Exception:
+        pass
+
     # --- optional: Sagnac special case (Eq.29): phase_sagnac = (2*omega/(chi*c0^2)) * (Omega*area)
     try:
         Omega = float(inp.get("Omega", inp.get("omega_rot", 0.0)))
