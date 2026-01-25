@@ -1,0 +1,23 @@
+{
+  "xs": [0, 1, 2],
+  "vs": [0, 2, 4],
+  "c0": 2,
+
+  "rho_inf": 1,
+  "kappa": 4,
+  "kappa_s": 16,
+  "eps": 0.01,
+
+  "omega": 10,
+  "chi": 2,
+
+  "loop_int_vdl": 3,
+
+  "Omega": 3,
+  "area": 4,
+
+  "n": 5,
+  "Gamma0": 2,
+
+  "Omega0": 6
+}
