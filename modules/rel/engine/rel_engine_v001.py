@@ -209,7 +209,16 @@ def analyze_profile_1d(inp: dict) -> dict:
     except Exception:
         pass
 
-    
+        # --- optional: user-supplied loop integral ∮ v·dl
+    try:
+        loop_int_vdl = float(inp.get("loop_int_vdl", 0.0))
+        if loop_int_vdl != 0.0:
+            out["loop_int_vdl"] = loop_int_vdl
+            if "phase_loop_coeff" in out and out["phase_loop_coeff"] is not None:
+                out["phase_loop"] = out["phase_loop_coeff"] * loop_int_vdl
+    except Exception:
+        pass
+
     # --- dispersion scales (Eq.39) + Lorentz-domain bound (Eq.45), optional
     try:
         rho_inf = float(inp.get("rho_inf", inp.get("rho_infty", 0.0)))

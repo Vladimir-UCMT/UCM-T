@@ -115,6 +115,8 @@ def main() -> int:
                     "k_max_for_eps": calc.get("k_max_for_eps"),
                     "eps": calc.get("eps"),
                     "phase_loop_coeff": calc.get("phase_loop_coeff"),
+                    "loop_int_vdl": calc.get("loop_int_vdl"),
+                    "phase_loop": calc.get("phase_loop"),
                 }
                 
         except Exception:
