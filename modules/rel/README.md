@@ -148,5 +148,12 @@ Optional:
 If provided (and `phase_loop_coeff` available), engine reports:
 - `phase_sagnac = 2*phase_loop_coeff*(Omega*area)`
 
+### Optional AB-like inputs (paper v2)
+
+Optional:
+- `Gamma` (circulation)
+
+If provided (and `phase_loop_coeff` available), engine reports:
+- `phase_ab = phase_loop_coeff * Gamma`
 
 
