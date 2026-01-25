@@ -137,6 +137,16 @@ Optional:
 - `loop_int_vdl` (user-supplied value of ∮ v·dl)
 
 If provided (and `phase_loop_coeff` is available), engine reports:
-- `phase_loop = phase_loop_coeff * loop_int_vdl`
+- `phase_loop = phase_loop_coeff * loop_int_vdl
+
+### Optional Sagnac inputs (paper v2)
+
+Optional:
+- `Omega` (rotation rate)
+- `area` (enclosed area)
+
+If provided (and `phase_loop_coeff` available), engine reports:
+- `phase_sagnac = 2*phase_loop_coeff*(Omega*area)`
+
 
 
