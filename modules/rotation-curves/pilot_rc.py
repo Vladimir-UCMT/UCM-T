@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import subprocess
 import sys
 import traceback
@@ -92,6 +93,20 @@ def find_pilot_results_csv(run_dir: Path) -> Path | None:
 def publish_success_contract(results_dir: Path, rows: list[dict], proc_returncode: int, pilot_csv: Path):
     results_dir.mkdir(parents=True, exist_ok=True)
 
+    # shared medium params (Phase 0 inventory)
+    env = os.environ
+
+    def _fenv(name: str, default: float) -> float:
+        try:
+            return float(env.get(name, str(default)))
+        except Exception:
+            return default
+
+    c0 = _fenv("UCM_C0", 2.0)
+    rho_inf = _fenv("UCM_RHO_INF", 0.0)
+    kappa = _fenv("UCM_KAPPA", 0.0)
+    kappa_s = _fenv("UCM_KAPPA_S", 0.0)
+
     global_payload = {
         "schema": "ucm_results_contract_v1",
         "module": "rc",
@@ -99,6 +114,10 @@ def publish_success_contract(results_dir: Path, rows: list[dict], proc_returncod
         "status": "ok",
         "n_items": len(rows),
         "engine_returncode": int(proc_returncode),
+        "c0": c0,
+        "rho_inf": rho_inf,
+        "kappa": kappa,
+        "kappa_s": kappa_s,        
         "pilot_results_csv": str(pilot_csv) if pilot_csv else "",
         **contract_meta(wrapper_version="calib-v2.3"),
     }
