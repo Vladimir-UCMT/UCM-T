@@ -130,6 +130,9 @@ Defaults:
 Also reported (dimensionless):
 - `k_lkappa_max_for_eps = sqrt(2*eps/3)`
 
+Engine also reports:
+- `dispersion_relation` (string form used for the dispersion model)
+
 
 ### Optional loop-phase inputs (paper v2)
 
