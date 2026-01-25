@@ -187,4 +187,6 @@ If provided, engine reports:
 
 See `modules/rel/examples/real_demo.json` and run:
 `powershell -ExecutionPolicy Bypass -File modules/rel/tests/test_real_demo.ps1`
+See also: `modules/rel/params_schema.md` (inputs/outputs map for future cross-module calibration).
+
 
