@@ -164,5 +164,13 @@ If `Gamma` is not provided but `n` and `Gamma0` are, engine uses:
 - `Gamma = n*Gamma0`
 and can report `phase_ab` accordingly.
 
+### Optional vorticity input (paper v2)
+
+Optional:
+- `Omega0`
+
+If provided, engine reports:
+- `Omega0_over_c0 = Omega0/c0`
+(related to ∇×β = -Omega0/c0).
 
 
