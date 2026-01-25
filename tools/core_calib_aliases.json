@@ -1,0 +1,29 @@
+{
+  "schema": "core_calib_aliases_v1",
+  "notes": "Key normalization for cross-module calibration. First filled for rel; extend for other modules later.",
+  "modules": {
+    "rel": {
+      "preferred_inputs": {
+        "rho_inf": ["rho_infty"],
+        "kappa_s": ["kappas"],
+        "Gamma0": ["gamma0"],
+        "Omega": ["omega_rot"],
+        "area": ["A"],
+        "Gamma": ["circulation"],
+        "Omega0": ["vorticity"]
+      },
+      "preferred_outputs": {
+        "Omega0_over_c0": [],
+        "phase_loop_coeff": [],
+        "phase_loop": [],
+        "phase_sagnac": [],
+        "phase_ab": [],
+        "l_kappa": [],
+        "l_s": [],
+        "k_max_for_eps": [],
+        "k_lkappa_max_for_eps": [],
+        "dispersion_relation": []
+      }
+    }
+  }
+}
