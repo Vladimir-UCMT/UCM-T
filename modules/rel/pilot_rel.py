@@ -122,6 +122,8 @@ def main() -> int:
                     "area": calc.get("area"),
                     "Gamma": calc.get("Gamma"),
                     "phase_ab": calc.get("phase_ab"),
+                    "n": calc.get("n"),
+                    "Gamma0": calc.get("Gamma0"),
                 }
                 
         except Exception:

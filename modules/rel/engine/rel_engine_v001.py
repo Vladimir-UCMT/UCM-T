@@ -219,6 +219,19 @@ def analyze_profile_1d(inp: dict) -> dict:
     except Exception:
         pass
 
+    # --- optional: circulation quantization Gamma = n*Gamma0
+    try:
+        if "Gamma" not in inp:
+            n = inp.get("n", None)
+            Gamma0 = inp.get("Gamma0", inp.get("gamma0", None))
+            if n is not None and Gamma0 is not None:
+                Gamma_q = float(n) * float(Gamma0)
+                out.update({"n": float(n), "Gamma0": float(Gamma0), "Gamma": Gamma_q})
+                if "phase_loop_coeff" in out and out["phase_loop_coeff"] is not None:
+                    out["phase_ab"] = out["phase_loop_coeff"] * Gamma_q
+    except Exception:
+        pass
+
     # --- optional: AB-like special case (Eq.28): phase_ab = phase_loop_coeff * Gamma
     try:
         Gamma = float(inp.get("Gamma", inp.get("circulation", 0.0)))
