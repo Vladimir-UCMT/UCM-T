@@ -107,3 +107,20 @@ S4: Optional optimization v0
 - robust weighting / outlier handling
 - where "truth" comes from (benchmarks vs real data)
 
+## Phase 0 (current state): inventory-only kernel
+
+As of 2026-01-25, module runs expose mostly meta-fields in `results_global.json`
+(engine paths, timestamps, tags, platform, etc.). A true cross-module calibration
+requires exporting at least one shared "medium parameter" (same meaning/units)
+from >=2 modules into `results_global.json`.
+
+Current status:
+- Collector + aliases + checker exist (tools/core_calib_collect.py, tools/core_calib_aliases.json, tools/core_calib_check.py).
+- rel module contains an explicit parameter map: modules/rel/params_schema.md
+- Candidate shared params columns not yet present across modules:
+  - c0, rho_inf, kappa, kappa_s (missing in merged CSV)
+
+Next transition criterion:
+- pick 1 shared parameter (e.g. c0) and export it from >=2 modules into results_global.json
+  (either as direct input echo or as fitted estimate with uncertainty).
+
