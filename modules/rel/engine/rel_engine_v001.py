@@ -276,12 +276,16 @@ def analyze_profile_1d(inp: dict) -> dict:
                 "k_max_for_eps": k_max,
             })
 
+
+
         if rho_inf > 0.0 and c0 > 0.0 and kappa_s > 0.0:
             l_s = (kappa_s / (rho_inf * c0 * c0)) ** 0.25         # ℓs^4 = κs/(ρ∞ c0^2)
             out.update({
                 "kappa_s": kappa_s,
                 "l_s": l_s,
             })
+            out["dispersion_relation"] = "w^2=c0^2 k^2 + (kappa/rho_inf) k^4 + (kappa_s/rho_inf) k^6"
+            
     except Exception:
         pass
 

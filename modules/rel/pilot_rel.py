@@ -126,6 +126,7 @@ def main() -> int:
                     "Gamma0": calc.get("Gamma0"),
                     "Omega0": calc.get("Omega0"),
                     "Omega0_over_c0": calc.get("Omega0_over_c0"),
+                    "dispersion_relation": calc.get("dispersion_relation"),
                 }
                 
         except Exception:
