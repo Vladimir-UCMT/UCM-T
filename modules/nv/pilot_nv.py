@@ -100,6 +100,18 @@ def main() -> int:
 
         cmd = ["python", "-X", "utf8", str(ENGINE_PATH), "--no-plots"]
         env = os.environ.copy()
+        # shared medium param (Phase 0 inventory): c0
+        try:
+            c0 = float(env.get("UCM_C0", "2.0"))
+        except Exception:
+            c0 = 2.0
+            
+        # shared medium param (Phase 0 inventory): rho_inf
+        try:
+            rho_inf = float(env.get("UCM_RHO_INF", "0.0"))
+        except Exception:
+            rho_inf = 0.0
+
         env["PYTHONUTF8"] = "1"
         env["PYTHONIOENCODING"] = "utf-8"
 
@@ -129,6 +141,9 @@ def main() -> int:
             "stdout_tail": stdout_tail,
             "stderr_tail": stderr_tail,
             "tag": args.tag,
+            "c0": c0,
+            "rho_inf": rho_inf,            
+
             **contract_meta(wrapper_version="calib-v2.3"),
         }
         if not ok:

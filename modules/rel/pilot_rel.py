@@ -104,6 +104,8 @@ def main() -> int:
             if out_json_path.exists():
                 calc = json.loads(out_json_path.read_text(encoding="utf-8-sig"))
                 calc_metrics = {
+                    "c0": calc.get("c0"),
+                    "rho_inf": calc.get("rho_inf"),
                     "horizon_x": calc.get("horizon_x"),
                     "Omega_H": calc.get("Omega_H"),
                     "T_H_coeff": calc.get("T_H_coeff"),
@@ -128,7 +130,24 @@ def main() -> int:
                     "Omega0_over_c0": calc.get("Omega0_over_c0"),
                     "dispersion_relation": calc.get("dispersion_relation"),
                 }
-                
+
+                # Fallback for smoke/demo: engine writes rel_engine_demo.json (not rel_calc_out.json)
+                if calc_metrics.get("c0") is None:
+                    demo_path = outdir / "rel_engine_demo.json"
+                    if demo_path.exists():
+                        demo = json.loads(demo_path.read_text(encoding="utf-8-sig"))
+                        c0_demo = (((demo.get("calc") or {}).get("profile") or {}).get("c0"))
+                        if c0_demo is not None:
+                            calc_metrics["c0"] = c0_demo
+                            
+                # Fallback for rho_inf (demo/smoke): take from env if missing
+                if calc_metrics.get("rho_inf") is None:
+                    try:
+                        calc_metrics["rho_inf"] = float(os.environ.get("UCM_RHO_INF", "0.0"))
+                    except Exception:
+                        calc_metrics["rho_inf"] = 0.0
+
+              
         except Exception:
             calc_metrics = {"calc_metrics_error": "failed_to_parse_rel_calc_out_json"}
 
