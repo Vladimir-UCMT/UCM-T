@@ -124,6 +124,13 @@ For `REL_MODE=profile` you may pass (optional) parameters:
 If provided, engine reports:
 - `l_kappa`, `l_s`, `k_max_for_eps`
 
+Defaults:
+- `eps = 0.01`
+
+Also reported (dimensionless):
+- `k_lkappa_max_for_eps = sqrt(2*eps/3)`
+
+
 ### Optional loop-phase inputs (paper v2)
 
 Optional:
