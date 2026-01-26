@@ -156,11 +156,30 @@ def _make_contract_global(
     error: str = "",
     n_items: int = 1,
 ) -> dict:
+
+    # shared medium params (Phase 0 inventory)
+    env = os.environ
+
+    def _fenv(name: str, default: float) -> float:
+        try:
+            return float(env.get(name, str(default)))
+        except Exception:
+            return default
+
+    c0 = _fenv("UCM_C0", 2.0)
+    rho_inf = _fenv("UCM_RHO_INF", 0.0)
+    kappa = _fenv("UCM_KAPPA", 0.0)
+    kappa_s = _fenv("UCM_KAPPA_S", 0.0)
+    
     payload: dict = {
         "schema": "ucm_results_contract_v1",
         "module": "rd",
         "timestamp_utc": _now_iso(),
         "status": "ok" if status == "ok" else "error",
+        "c0": c0,
+        "rho_inf": rho_inf,
+        "kappa": kappa,
+        "kappa_s": kappa_s,        
         "engine_returncode": int(returncode),
         "n_items": int(max(1, n_items)),
         "engine": "pilot_cvn_rd.py",
