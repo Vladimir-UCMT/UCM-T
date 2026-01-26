@@ -51,4 +51,35 @@ a concrete calibration or falsification procedure.
 > Individual modules, engines, and datasets may evolve independently,
 > provided they comply with reproducibility and documentation requirements.
 
+## Phase 0: shared medium params (UCM_*)
+
+UCM-T calibration wrappers export the following shared “medium parameters” into `results_global.json`
+(for all smoke modules: nv, casimir, rc, rd, rel). Values are taken from environment variables.
+
+### Environment variables
+
+- `UCM_C0` — default `2.0`
+- `UCM_RHO_INF` — default `0.0`
+- `UCM_KAPPA` — default `0.0`
+- `UCM_KAPPA_S` — default `0.0`
+
+These parameters are written to `results_global.json` as:
+`c0`, `rho_inf`, `kappa`, `kappa_s` (and become `rg__c0`, `rg__rho_inf`, `rg__kappa`, `rg__kappa_s` after collect/merge).
+
+### PowerShell quick run (current session)
+
+```powershell
+$env:UCM_C0="2.0"
+$env:UCM_RHO_INF="0.0"
+$env:UCM_KAPPA="0.0"
+$env:UCM_KAPPA_S="0.0"
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\run_calib_smoke_v23.ps1
+
+Notes:
+
+$env:NAME="value" sets an env var for the current PowerShell process/session.
+
+-ExecutionPolicy Bypass runs this script without changing the system-wide execution policy.
+
 License: MIT
