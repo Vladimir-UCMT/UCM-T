@@ -82,4 +82,11 @@ $env:NAME="value" sets an env var for the current PowerShell process/session.
 
 -ExecutionPolicy Bypass runs this script without changing the system-wide execution policy.
 
+### KK healthcheck (one command)
+
+```powershell
+cd C:\UCM\UCM-T
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\healthcheck_calib_smoke.ps1
+
+
 License: MIT
