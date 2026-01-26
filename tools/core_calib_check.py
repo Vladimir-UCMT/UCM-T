@@ -73,8 +73,8 @@ def main() -> int:
     mods_with_key = [m for m, keys in per_mod.items() if req_key in keys]  # per_mod already stores non-empty rg__ keys
     mods_with_key = sorted(set(mods_with_key))
 
-    if len(mods_with_key) < 2:
-        print(f"[fail] required shared param {req_key} must be non-empty in >=2 modules, got {len(mods_with_key)}: {mods_with_key}")
+    if len(mods_with_key) < 4:
+        print(f"[fail] required shared param {req_key} must be non-empty in >=4 modules, got {len(mods_with_key)}: {mods_with_key}")
         return 2
     else:
         print(f"[ok] required shared param {req_key} present in modules: {mods_with_key}")
@@ -82,8 +82,8 @@ def main() -> int:
     mods_with_key = [m for m, keys in per_mod.items() if req_key in keys]
     mods_with_key = sorted(set(mods_with_key))
 
-    if len(mods_with_key) < 2:
-        print(f"[fail] required shared param {req_key} must be non-empty in >=2 modules, got {len(mods_with_key)}: {mods_with_key}")
+    if len(mods_with_key) < 4:
+        print(f"[fail] required shared param {req_key} must be non-empty in >=4 modules, got {len(mods_with_key)}: {mods_with_key}")
         return 2
     else:
         print(f"[ok] required shared param {req_key} present in modules: {mods_with_key}")
@@ -93,8 +93,8 @@ def main() -> int:
     mods_with_key = [m for m, keys in per_mod.items() if req_key in keys]
     mods_with_key = sorted(set(mods_with_key))
 
-    if len(mods_with_key) < 2:
-        print(f"[fail] required shared param {req_key} must be non-empty in >=2 modules, got {len(mods_with_key)}: {mods_with_key}")
+    if len(mods_with_key) < 4:
+        print(f"[fail] required shared param {req_key} must be non-empty in >=4 modules, got {len(mods_with_key)}: {mods_with_key}")
         return 2
     else:
         print(f"[ok] required shared param {req_key} present in modules: {mods_with_key}")
@@ -103,8 +103,8 @@ def main() -> int:
     mods_with_key = [m for m, keys in per_mod.items() if req_key in keys]
     mods_with_key = sorted(set(mods_with_key))
 
-    if len(mods_with_key) < 2:
-        print(f"[fail] required shared param {req_key} must be non-empty in >=2 modules, got {len(mods_with_key)}: {mods_with_key}")
+    if len(mods_with_key) < 4:
+        print(f"[fail] required shared param {req_key} must be non-empty in >=4 modules, got {len(mods_with_key)}: {mods_with_key}")
         return 2
     else:
         print(f"[ok] required shared param {req_key} present in modules: {mods_with_key}")
