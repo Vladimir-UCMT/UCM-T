@@ -16,6 +16,8 @@ ENGINE_PATH = REPO_ROOT / "modules" / "nv" / "engine" / "nv_engine_v023.py"
 
 sys.path.insert(0, str(REPO_ROOT))
 from tools.contract_meta import contract_meta  # noqa: E402
+from tools.shared_env import phase0_params  # noqa: E402
+
 
 
 def now_iso() -> str:
@@ -100,28 +102,12 @@ def main() -> int:
 
         cmd = ["python", "-X", "utf8", str(ENGINE_PATH), "--no-plots"]
         env = os.environ.copy()
-        # shared medium param (Phase 0 inventory): c0
-        try:
-            c0 = float(env.get("UCM_C0", "2.0"))
-        except Exception:
-            c0 = 2.0
-            
-        # shared medium param (Phase 0 inventory): rho_inf
-        try:
-            rho_inf = float(env.get("UCM_RHO_INF", "0.0"))
-        except Exception:
-            rho_inf = 0.0
-        # shared medium param (Phase 0 inventory): kappa
-        try:
-            kappa = float(env.get("UCM_KAPPA", "0.0"))
-        except Exception:
-            kappa = 0.0
 
-        # shared medium param (Phase 0 inventory): kappa_s
-        try:
-            kappa_s = float(env.get("UCM_KAPPA_S", "0.0"))
-        except Exception:
-            kappa_s = 0.0
+        p0 = phase0_params(env)
+        c0 = p0["c0"]
+        rho_inf = p0["rho_inf"]
+        kappa = p0["kappa"]
+        kappa_s = p0["kappa_s"]
 
 
         env["PYTHONUTF8"] = "1"
