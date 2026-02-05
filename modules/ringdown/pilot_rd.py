@@ -30,7 +30,7 @@ from typing import Optional, Tuple
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 from tools.contract_meta import contract_meta
-from tools.shared_env import phase0_params
+from tools.shared_env import phase0_params  # noqa: E402
 
 
 DEFAULT_BENCH = "RD_BENCH_3_NEW"
@@ -159,15 +159,7 @@ def _make_contract_global(
 ) -> dict:
 
     # shared medium params (Phase 0 inventory)
-    env = os.environ
-
-    def _fenv(name: str, default: float) -> float:
-        try:
-            return float(env.get(name, str(default)))
-        except Exception:
-            return default
-    env = os.environ.copy()
-    p0 = phase0_params(env)
+    p0 = phase0_params()
     c0 = p0["c0"]
     rho_inf = p0["rho_inf"]
     kappa = p0["kappa"]
