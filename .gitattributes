@@ -1,28 +1,12 @@
-# Normalize text files to LF in the repository (prevents CRLF/LF noise on Windows)
-* text=auto eol=lf
+* text=auto
 
-# Common text formats
-*.md  text eol=lf
-*.txt text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-*.cff text eol=lf
-*.toml text eol=lf
+# Source
+*.py   text eol=lf
+*.md   text eol=lf
 *.json text eol=lf
-*.tsv text eol=lf
-*.py  text eol=lf
-*.ps1 text eol=lf
-*.sh  text eol=lf
-*.bat text eol=crlf
+*.csv  text eol=lf
 
-# Images/binaries (no line ending conversions)
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.gif binary
-*.pdf binary
-*.zip binary
-*.h5 binary
-*.hdf5 binary
-*.npz binary
-modules/ringdown/data/cvn/posteriors_csv/*.csv text eol=lf
+# Windows scripts
+*.ps1  text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf

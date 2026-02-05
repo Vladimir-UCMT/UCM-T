@@ -162,6 +162,45 @@ def main() -> int:
                     except Exception:
                         calc_metrics["kappa_s"] = 0.0
 
+                # ---- Phase0 override from env (so collect/merge reflects shared params) ----
+                def _env_float(name: str):
+                    v = os.environ.get(name, "").strip()
+                    if not v:
+                        return None
+                    try:
+                        return float(v)
+                    except Exception:
+                        return None
+
+                c0_env = _env_float("UCM_C0")
+                rho_inf_env = _env_float("UCM_RHO_INF")
+                kappa_env = _env_float("UCM_KAPPA")
+                kappa_s_env = _env_float("UCM_KAPPA_S")
+
+                # Preserve engine/demo values for traceability if they differ from env
+                c0_calc = calc_metrics.get("c0")
+                rho_inf_calc = calc_metrics.get("rho_inf")
+                kappa_calc = calc_metrics.get("kappa")
+                kappa_s_calc = calc_metrics.get("kappa_s")
+
+                if c0_env is not None:
+                    if c0_calc is not None and c0_calc != c0_env:
+                        calc_metrics["c0_calc"] = c0_calc
+                    calc_metrics["c0"] = c0_env
+                if rho_inf_env is not None:
+                    if rho_inf_calc is not None and rho_inf_calc != rho_inf_env:
+                        calc_metrics["rho_inf_calc"] = rho_inf_calc
+                    calc_metrics["rho_inf"] = rho_inf_env
+                if kappa_env is not None:
+                    if kappa_calc is not None and kappa_calc != kappa_env:
+                        calc_metrics["kappa_calc"] = kappa_calc
+                    calc_metrics["kappa"] = kappa_env
+                if kappa_s_env is not None:
+                    if kappa_s_calc is not None and kappa_s_calc != kappa_s_env:
+                        calc_metrics["kappa_s_calc"] = kappa_s_calc
+                    calc_metrics["kappa_s"] = kappa_s_env
+
+
               
         except Exception:
             calc_metrics = {"calc_metrics_error": "failed_to_parse_rel_calc_out_json"}
@@ -194,7 +233,7 @@ def main() -> int:
             "rel_mode": rel_mode_effective,
             "rel_input_json_basename": rel_input_basename,
             **calc_metrics,
-            **contract_meta(wrapper_version="calib-v2.3.1"),
+            **contract_meta(wrapper_version="calib-v2.3"),
         }
         if not ok:
             global_payload["error"] = f"engine_returncode={proc.returncode}"
@@ -232,7 +271,7 @@ def main() -> int:
             "engine_returncode": 1,
             "n_items": 1,
             "error": err,
-            **contract_meta(wrapper_version="calib-v2.3.1"),
+            **contract_meta(wrapper_version="calib-v2.3"),
         }
 
         try:

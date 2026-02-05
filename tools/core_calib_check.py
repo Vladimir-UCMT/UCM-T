@@ -59,55 +59,64 @@ def main() -> int:
             preview += ", ..."
         print(f"       {preview}")
 
-    # Candidate shared parameters (presence only)
+    # Candidate shared parameters (by CSV headers, not substring search)
     candidates = ["rg__c0", "rg__rho_inf", "rg__kappa", "rg__kappa_s"]
-    present = [c for c in candidates if c in merged.read_text(encoding="utf-8")]
-    missing = [c for c in candidates if c not in present]
+    columns = set(rows[0].keys())
 
-    print("[check] candidate shared params columns (presence only):")
+    present = [c for c in candidates if c in columns]
+    missing = [c for c in candidates if c not in columns]
+
+    print("[check] candidate shared params columns (by header):")
     print(f"  present: {', '.join(present) if present else '(none)'}")
     print(f"  missing: {', '.join(missing) if missing else '(none)'}")
-        # --- hard requirements for Phase 0: shared medium params ---
-    # Require rg__c0 to be non-empty in at least 2 modules (expected: nv + rel)
-    req_key = "rg__c0"
-    mods_with_key = [m for m, keys in per_mod.items() if req_key in keys]  # per_mod already stores non-empty rg__ keys
-    mods_with_key = sorted(set(mods_with_key))
 
-    if len(mods_with_key) < 5:
-        print(f"[fail] required shared param {req_key} must be non-empty in >=5 modules, got {len(mods_with_key)}: {mods_with_key}")
-        return 2
-    else:
-        print(f"[ok] required shared param {req_key} present in modules: {mods_with_key}")
-    req_key = "rg__rho_inf"
-    mods_with_key = [m for m, keys in per_mod.items() if req_key in keys]
-    mods_with_key = sorted(set(mods_with_key))
+    def _norm_num(s: str):
+        t = str(s).strip()
+        if t == "":
+            return None
+        try:
+            # normalize numeric formatting (2.1110 == 2.111)
+            return round(float(t), 12)
+        except Exception:
+            return t  # fall back to raw string
 
-    if len(mods_with_key) < 5:
-        print(f"[fail] required shared param {req_key} must be non-empty in >=5 modules, got {len(mods_with_key)}: {mods_with_key}")
-        return 2
-    else:
-        print(f"[ok] required shared param {req_key} present in modules: {mods_with_key}")
+    # --- hard requirements for Phase 0: shared medium params ---
+    required = candidates
 
+    for req_key in required:
+        if req_key not in columns:
+            print(f"[fail] required column missing: {req_key}")
+            return 2
 
-    req_key = "rg__kappa"
-    mods_with_key = [m for m, keys in per_mod.items() if req_key in keys]
-    mods_with_key = sorted(set(mods_with_key))
+        # ensure non-empty for all modules and consistent across modules
+        per_module_val = {}
+        missing_mods = []
+        for r in rows:
+            mod = r.get("module", "?")
+            raw = r.get(req_key, "")
+            norm = _norm_num(raw)
+            if norm is None:
+                missing_mods.append(mod)
+            else:
+                per_module_val[mod] = (raw, norm)
 
-    if len(mods_with_key) < 5:
-        print(f"[fail] required shared param {req_key} must be non-empty in >=5 modules, got {len(mods_with_key)}: {mods_with_key}")
-        return 2
-    else:
-        print(f"[ok] required shared param {req_key} present in modules: {mods_with_key}")
-        
-    req_key = "rg__kappa_s"
-    mods_with_key = [m for m, keys in per_mod.items() if req_key in keys]
-    mods_with_key = sorted(set(mods_with_key))
+        if missing_mods:
+            missing_mods = sorted(set(missing_mods))
+            print(f"[fail] required shared param {req_key} is empty in modules: {missing_mods}")
+            return 2
 
-    if len(mods_with_key) < 5:
-        print(f"[fail] required shared param {req_key} must be non-empty in >=5 modules, got {len(mods_with_key)}: {mods_with_key}")
-        return 2
-    else:
-        print(f"[ok] required shared param {req_key} present in modules: {mods_with_key}")
+        norms = {v[1] for v in per_module_val.values()}
+        if len(norms) != 1:
+            print(f"[fail] required shared param {req_key} differs across modules:")
+            for mod in sorted(per_module_val.keys()):
+                raw, norm = per_module_val[mod]
+                print(f"  - {mod}: {raw} (norm={norm})")
+            return 2
+
+        the_val = next(iter(norms))
+        mods = sorted(per_module_val.keys())
+        print(f"[ok] required shared param {req_key} consistent across modules ({len(mods)}): {the_val}")
+
 
 
     return 0

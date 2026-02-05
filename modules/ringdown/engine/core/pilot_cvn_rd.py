@@ -182,24 +182,27 @@ def load_samples(path: Path, fmt: str, thin: int = 1, max_n: int | None = None):
         raise ValueError(f"No samples read from {path}")
     return df_list, dt_list
 
-
-def quantile(sorted_x: List[float], q: float) -> float:
+def quantile(sorted_x: List[float], q: float):
     if not 0.0 <= q <= 1.0:
         raise ValueError("q must be in [0,1]")
     n = len(sorted_x)
+    if n == 0:
+        return None
     if n == 1:
         return sorted_x[0]
+
     pos = (n - 1) * q
     lo = int(math.floor(pos))
-    hi = int(math.ceil(pos))
-    if lo == hi:
-        return sorted_x[lo]
+    hi = min(lo + 1, n - 1)
     frac = pos - lo
     return sorted_x[lo] * (1 - frac) + sorted_x[hi] * frac
 
 
-def summarize_samples(x: List[float], qs: List[float]) -> Dict[str, float]:
+
+def summarize_samples(x: List[float], qs: List[float]) -> Dict[str, float | None]:
     xs = sorted(x)
+    if not xs:
+        return {f"q{int(q * 100):02d}": None for q in qs}
     return {f"q{int(q * 100):02d}": quantile(xs, q) for q in qs}
 
 
@@ -904,7 +907,14 @@ def main():
         boot_df.append(weighted_mean(vals_df, wts))
         boot_dt.append(weighted_mean(vals_dt, wts))
 
-    s_boot_df = summarize_samples(boot_df, q_global)
+    # bootstrap summary may be empty (e.g. B=0 or filters remove all samples) -> don't crash
+    if boot_df is None or getattr(boot_df, "empty", False):
+        print("[warn] bootstrap dataframe is empty -> bootstrap quantiles set to None")
+        s_boot_df = {f"q{int(q * 100):02d}": None for q in q_global}
+    else:
+        s_boot_df = summarize_samples(boot_df, q_global)
+
+
     s_boot_dt = summarize_samples(boot_dt, q_global)
 
     global_out = {
