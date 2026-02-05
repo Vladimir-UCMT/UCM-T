@@ -30,6 +30,7 @@ from typing import Optional, Tuple
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 from tools.contract_meta import contract_meta
+from tools.shared_env import phase0_params
 
 
 DEFAULT_BENCH = "RD_BENCH_3_NEW"
@@ -165,11 +166,14 @@ def _make_contract_global(
             return float(env.get(name, str(default)))
         except Exception:
             return default
+    env = os.environ.copy()
+    p0 = phase0_params(env)
+    c0 = p0["c0"]
+    rho_inf = p0["rho_inf"]
+    kappa = p0["kappa"]
+    kappa_s = p0["kappa_s"]
 
-    c0 = _fenv("UCM_C0", 2.0)
-    rho_inf = _fenv("UCM_RHO_INF", 0.0)
-    kappa = _fenv("UCM_KAPPA", 0.0)
-    kappa_s = _fenv("UCM_KAPPA_S", 0.0)
+
     
     payload: dict = {
         "schema": "ucm_results_contract_v1",
