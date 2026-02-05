@@ -173,7 +173,6 @@ def _make_contract_global(
     kappa = p0["kappa"]
     kappa_s = p0["kappa_s"]
 
-
     
     payload: dict = {
         "schema": "ucm_results_contract_v1",
