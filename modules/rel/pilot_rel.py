@@ -14,6 +14,8 @@ ENGINE_PATH = REPO_ROOT / "modules" / "rel" / "engine" / "rel_engine_v001.py"
 
 sys.path.insert(0, str(REPO_ROOT))
 from tools.contract_meta import contract_meta  # noqa: E402
+from tools.shared_env import phase0_params  # noqa: E402
+
 
 
 def now_iso() -> str:
@@ -218,6 +220,23 @@ def main() -> int:
 
         stdout_tail = "\n".join((proc.stdout or "").splitlines()[-20:])
         stderr_tail = "\n".join((proc.stderr or "").splitlines()[-20:])
+
+        # ---- Phase0 (shared medium params): always publish from env ----
+        p0 = phase0_params()
+        # keep any engine-provided values for traceability if they differ
+        if "c0" in calc_metrics and calc_metrics["c0"] != p0["c0"]:
+            calc_metrics["c0_calc"] = calc_metrics["c0"]
+        if "rho_inf" in calc_metrics and calc_metrics["rho_inf"] != p0["rho_inf"]:
+            calc_metrics["rho_inf_calc"] = calc_metrics["rho_inf"]
+        if "kappa" in calc_metrics and calc_metrics["kappa"] != p0["kappa"]:
+            calc_metrics["kappa_calc"] = calc_metrics["kappa"]
+        if "kappa_s" in calc_metrics and calc_metrics["kappa_s"] != p0["kappa_s"]:
+            calc_metrics["kappa_s_calc"] = calc_metrics["kappa_s"]
+
+        calc_metrics["c0"] = p0["c0"]
+        calc_metrics["rho_inf"] = p0["rho_inf"]
+        calc_metrics["kappa"] = p0["kappa"]
+        calc_metrics["kappa_s"] = p0["kappa_s"]
 
         global_payload = {
             "schema": "ucm_results_contract_v1",
