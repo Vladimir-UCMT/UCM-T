@@ -105,7 +105,7 @@ jobs:
           }
 
       - name: Upload runs artifact on failure
-        if: failure() && exists(env.UCM_RUNS_ROOT)
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: calib-runs-windows
