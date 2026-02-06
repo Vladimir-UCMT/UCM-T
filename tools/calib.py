@@ -77,6 +77,11 @@ def _run(cmd: List[str], *, cwd: Path, env: dict, title: str) -> subprocess.Comp
         encoding="utf-8",
         errors="replace",
     )
+def _run_live(cmd: List[str], *, cwd: Path, env: dict, title: str) -> subprocess.CompletedProcess:
+    print(f"\n=== {title} ===")
+    print(" ".join(cmd))
+    # Live output to console (no capture) to avoid "hang" feeling.
+    return subprocess.run(cmd, cwd=str(cwd), env=env)
 
 
 def _latest_collect_dir(run_dir: Path) -> Optional[Path]:
@@ -116,8 +121,8 @@ def cmd_healthcheck(args: argparse.Namespace) -> int:
         # fast = do not run RD engine (adapter uses --no-run)
         run_cmd += ["--rd-no-run"]
 
-    p1 = _run(run_cmd, cwd=rr, env=env, title="RUN (run_calib_all)")
-    print(p1.stdout)
+    p1 = _run_live(run_cmd, cwd=rr, env=env, title="RUN (run_calib_all)")
+
     # Note: run_calib_all historically returns 0 even if module reported error.
     # We'll enforce correctness by collect+check below.
 
