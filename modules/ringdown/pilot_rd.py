@@ -326,6 +326,38 @@ def main() -> int:
     repo_root = _repo_root_from_this_file()
     ringdown_root = repo_root / "modules" / "ringdown"
 
+    # Fast-path for CI / calibration smoke: publish minimal contract without relying on ringdown_root/RUNS
+    # Fast-path for CI / calibration smoke: publish minimal contract without relying on ringdown_root/RUNS
+    if args.no_run:
+        p0 = phase0_params()
+        global_payload = {
+            "schema": "ucm_results_contract_v1",
+            "module": "rd",
+            "timestamp_utc": _now_iso(),
+            "status": "ok",
+            "engine_returncode": 0,
+            "n_items": 1,
+            "tag": args.tag,
+            "bench": args.bench,
+            "score_type": args.score,
+            "notes": "no-run mode: contract published without executing RD engine",
+            **p0,
+            **contract_meta(wrapper_version="calib-v2.3"),
+        }
+        stub_rows = [
+            {
+                "item_id": "rd_no_run_stub",
+                "status": "ok",
+                "score": args.score,
+                "metric_value": 0.0,
+                "summary": "no-run stub item (CI smoke)",
+            }
+        ]
+        _write_items_contract(out_results_dir / "results_items.csv", stub_rows)
+
+        _write_json(out_results_dir / "results_global.json", global_payload)
+        return 0
+
     # Run engine and capture tail
     try:
         rc, out_tail = _run_rd_engine(
