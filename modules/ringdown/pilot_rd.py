@@ -354,8 +354,8 @@ def main() -> int:
             }
         ]
         _write_items_contract(out_results_dir / "results_items.csv", stub_rows)
-
         _write_json(out_results_dir / "results_global.json", global_payload)
+        _write_wrapper_status(out_results_dir, status="ok", error="", published_from="results_global.json")
         return 0
 
     # Run engine and capture tail
