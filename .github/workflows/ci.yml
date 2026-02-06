@@ -20,7 +20,7 @@ jobs:
     runs-on: windows-latest
     env:
       MPLBACKEND: Agg
-      UCM_RUNS_ROOT: "${{ runner.temp }}\\UCM_RUNS"
+      UCM_RUNS_ROOT: "${{ github.workspace }}\\_UCM_RUNS"
 
     steps:
       - name: Checkout (with LFS)
@@ -45,6 +45,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip wheel
           python -m pip install numpy scipy matplotlib
+
+      - name: Ensure runs dir
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:UCM_RUNS_ROOT | Out-Null
+          Write-Host "UCM_RUNS_ROOT=$env:UCM_RUNS_ROOT"
+
 
       - name: Healthcheck (fast)
         shell: pwsh
