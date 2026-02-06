@@ -32,7 +32,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
+
+      - name: Ensure runs dir
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:UCM_RUNS_ROOT | Out-Null
+          Write-Host "UCM_RUNS_ROOT=$env:UCM_RUNS_ROOT"
+          Get-ChildItem $env:UCM_RUNS_ROOT -Force | Out-Null
+
 
       - name: Python info
         shell: pwsh
@@ -57,6 +64,13 @@ jobs:
         shell: pwsh
         run: |
           python -m tools.calib healthcheck --fast --phase0-c0 2.111 --phase0-rho-inf 0.123 --phase0-kappa 0.00456 --phase0-kappa-s 0.0789
+
+      - name: Dump last 200 lines of healthcheck log (on failure)
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "=== DEBUG: last logs from workflow steps are above. If healthcheck failed, see Healthcheck step output. ==="
+
 
       - name: Debug dump (on failure)
         if: failure()
@@ -91,8 +105,9 @@ jobs:
           }
 
       - name: Upload runs artifact on failure
-        if: failure()
+        if: failure() && exists(env.UCM_RUNS_ROOT)
         uses: actions/upload-artifact@v4
         with:
           name: calib-runs-windows
           path: ${{ env.UCM_RUNS_ROOT }}
+          if-no-files-found: ignore
