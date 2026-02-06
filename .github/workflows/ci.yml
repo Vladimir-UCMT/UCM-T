@@ -103,11 +103,13 @@ jobs:
               $o | Format-List
             }
           }
+	
 
-      - name: Upload runs artifact on failure
-        if: failure() && exists(env.UCM_RUNS_ROOT)
-        uses: actions/upload-artifact@v4
-        with:
-          name: calib-runs-windows
-          path: ${{ env.UCM_RUNS_ROOT }}
-          if-no-files-found: ignore
+- name: Upload runs artifact on failure
+  if: failure()
+  uses: actions/upload-artifact@v4
+  with:
+    name: calib-runs-windows
+    path: ${{ env.UCM_RUNS_ROOT }}
+    if-no-files-found: ignore
+
