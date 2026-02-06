@@ -14,3 +14,28 @@ jobs:
           python-version: "3.x"
       - name: Compile all python files
         run: python -m compileall -q .
+
+  healthcheck-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install deps for engines
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy scipy matplotlib
+
+      - name: Healthcheck (fast)
+        shell: pwsh
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python -m tools.calib healthcheck --fast `
+            --phase0-c0 2.111 --phase0-rho-inf 0.123 --phase0-kappa 0.00456 --phase0-kappa-s 0.0789
