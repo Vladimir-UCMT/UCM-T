@@ -111,13 +111,19 @@ def cmd_healthcheck(args: argparse.Namespace) -> int:
     env["UCM_KAPPA"] = str(args.phase0_kappa)
     env["UCM_KAPPA_S"] = str(args.phase0_kappa_s)
 
-    skip = _calc_skip(args.only, args.skip)
+    # ultrafast: convenience preset (skip RC + RD no-run) unless user overrides via --only/--skip
+    fast_mode = bool(args.fast or args.ultrafast)
+
+    if args.ultrafast and not args.only and not args.skip:
+        skip = _calc_skip(None, "rc")
+    else:
+        skip = _calc_skip(args.only, args.skip)
 
     # 1) run
     run_cmd = [sys.executable, "-X", "utf8", str(rr / "tools" / "run_calib_all.py"), "--outdir", str(run_dir)]
     if skip:
         run_cmd += ["--skip", skip]
-    if args.fast:
+    if fast_mode:
         # fast = do not run RD engine (adapter uses --no-run)
         run_cmd += ["--rd-no-run"]
 
@@ -202,6 +208,11 @@ def build_parser() -> argparse.ArgumentParser:
     hc.add_argument("--skip", default="", help="Comma list to skip: nv,casimir,rel,rc,rd")
     hc.add_argument("--only", default=None, help="Comma list: run only these modules (overrides --skip).")
     hc.add_argument("--fast", action="store_true", help="Fast mode (currently: --rd-no-run).")
+    hc.add_argument(
+        "--ultrafast",
+        action="store_true",
+        help="Ultrafast preset: implies --fast and skips RC (no network/download).",
+    )
 
     # Phase0
     hc.add_argument("--phase0-c0", type=float, default=2.0)

@@ -1,4 +1,5 @@
 # UCM-T
+
 ## Start here
 
 - Manifesto (EN): `docs/manifesto_en.md`
@@ -7,22 +8,40 @@
 - Results contract: `tools/results_contract.md`
 - Results contract comparator: `tools/compare_results_contract.py`
 - Contract metadata helper: `tools/contract_meta.py`
-- Smoke test launcher: `tools/scripts/run_calib_smoke_v23.ps1`
+- Legacy smoke launcher (PowerShell): `tools/scripts/run_calib_smoke_v23.ps1`
 - Latest calibration baseline: Release `calib-v2.3.1` (see GitHub Releases)
 
-## Calibration pipeline (quick check)
+## Quickstart (healthcheck)
 
-To verify that the unified calibration wrappers are working end-to-end, run:
+This runs the unified pipeline end-to-end: **run → collect → check**.
+
+1) Install minimal deps (same list as CI):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools/scripts/run_calib_smoke_v23.ps1
-Outputs are written under C:\UCM\RUNS\... and each module publishes artifacts into:
+python -m pip install -r requirements-ci.txt
+```
 
-results/results_global.json
+2) Run healthcheck (fast mode, CI-friendly):
 
-results/results_items.csv
+```powershell
+python -m tools.calib healthcheck --fast --phase0-c0 2.111 --phase0-rho-inf 0.123 --phase0-kappa 0.00456 --phase0-kappa-s 0.0789
+```
 
-results/wrapper_status.json
+If you want a **no-network / instant** check (skips RC and also uses RD no-run), use `--ultrafast`:
+
+```powershell
+python -m tools.calib healthcheck --ultrafast --phase0-c0 2.111 --phase0-rho-inf 0.123 --phase0-kappa 0.00456 --phase0-kappa-s 0.0789
+```
+
+Outputs are written under `C:\UCM\RUNS\...` (if it exists), otherwise `./RUNS/` inside the repo.
+
+Each module publishes artifacts into:
+
+- `results/results_global.json`
+- `results/results_items.csv`
+- `results/wrapper_status.json`
+
+## About
 
 **Unified Compressible Medium Theory (UCM-T)**  
 Research hub for models, calibration pipelines, and reproducible benchmarks.
@@ -33,9 +52,9 @@ Research hub for models, calibration pipelines, and reproducible benchmarks.
   Methodological manifesto (RU/EN) and lightweight project conventions.
 
 - Modules: [`modules/`](modules/)  
-  Domain-specific workspaces (e.g., rotation curves) with reproducibility links.
+  Domain-specific workspaces with reproducibility links.
 
-  - Tools: [`tools/`](tools/)  
+- Tools: [`tools/`](tools/)  
   Reproducibility bundle template, results contract, and the results contract comparator.
 
 This repository serves as a central coordination point for:
@@ -75,18 +94,20 @@ $env:UCM_KAPPA="0.0"
 $env:UCM_KAPPA_S="0.0"
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\run_calib_smoke_v23.ps1
+```
 
 Notes:
 
-$env:NAME="value" sets an env var for the current PowerShell process/session.
+- `$env:NAME="value"` sets an env var for the current PowerShell session.
+- `-ExecutionPolicy Bypass` runs the script without changing the system-wide execution policy.
 
--ExecutionPolicy Bypass runs this script without changing the system-wide execution policy.
-
-### KK healthcheck (one command)
+### KK healthcheck (PowerShell wrapper)
 
 ```powershell
 cd C:\UCM\UCM-T
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\healthcheck_calib_smoke.ps1
+```
 
+## License
 
-License: MIT
+MIT
