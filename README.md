@@ -110,6 +110,13 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\healthch
 ### Windows one-button
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\healthcheck_ultrafast.ps1
 
+### Windows one-button (ultrafast)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\healthcheck_ultrafast.ps1
+
+### Windows one-button (ultrafast + zip)
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\healthcheck_ultrafast_zip.ps1
+
+
 
 
 ## License
