@@ -149,7 +149,8 @@ def main() -> int:
     rows: List[Dict[str, Any]] = []
     all_keys: List[str] = []
 
-    for child in sorted([p for p in run_dir.iterdir() if p.is_dir()]):
+    for child in sorted([p for p in run_dir.iterdir() if p.is_dir() and not p.name.startswith("CORE_CALIB_COLLECT_")]):
+
         scan = _scan_module_dir(child)
         scans.append(scan)
 
