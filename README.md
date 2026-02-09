@@ -107,6 +107,10 @@ Notes:
 cd C:\UCM\UCM-T
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\healthcheck_calib_smoke.ps1
 ```
+### Windows one-button
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\scripts\healthcheck_ultrafast.ps1
+
+
 
 ## License
 
