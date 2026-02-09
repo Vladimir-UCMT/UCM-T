@@ -159,7 +159,7 @@ def cmd_healthcheck(args: argparse.Namespace) -> int:
             line = line.strip()
             prefix = f"[done] {key}:"
             if line.startswith(prefix):
-                return Path(line[len(prefix):].strip())
+                return Path(line.strip()[len(prefix):].strip())
         return None
 
     collect_dir = _parse_done_path(p2.stdout, "out_dir")
