@@ -141,7 +141,7 @@ def cmd_healthcheck(args: argparse.Namespace) -> int:
         "--run-dir",
         str(run_dir),
         "--out-root",
-        str(runs_root),
+        str(run_dir),
         "--aliases",
         str(rr / "tools" / "core_calib_aliases.json"),
     ]
@@ -159,7 +159,7 @@ def cmd_healthcheck(args: argparse.Namespace) -> int:
             line = line.strip()
             prefix = f"[done] {key}:"
             if line.startswith(prefix):
-                return Path(line.split(":", 2)[-1].strip())
+                return Path(line[len(prefix):].strip())
         return None
 
     collect_dir = _parse_done_path(p2.stdout, "out_dir")
