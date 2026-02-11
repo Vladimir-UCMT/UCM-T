@@ -1,9 +1,12 @@
-﻿
-name: CI
+﻿name: CI
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
+  schedule:
+    # Weekly (Sunday) 03:00 UTC
+    - cron: "0 3 * * 0"
 
 jobs:
   smoke:
@@ -21,7 +24,6 @@ jobs:
     env:
       MPLBACKEND: Agg
       UCM_RUNS_ROOT: "${{ github.workspace }}\\_UCM_RUNS"
-
     steps:
       - name: Checkout (with LFS)
         uses: actions/checkout@v4
@@ -33,82 +35,131 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Ensure runs dir
+      - name: Install deps (CI)
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path $env:UCM_RUNS_ROOT | Out-Null
-          Write-Host "UCM_RUNS_ROOT=$env:UCM_RUNS_ROOT"
-          Get-ChildItem $env:UCM_RUNS_ROOT -Force | Out-Null
-
-
-      - name: Python info
-        shell: pwsh
-        run: |
-          python -V
-          python -m pip --version
-
-      - name: Install deps for CI
-        shell: pwsh
-        run: |
-          python -m pip install --upgrade pip wheel
+          python -m pip install --upgrade pip wheel setuptools
           python -m pip install -r requirements-ci.txt
 
-      - name: Ensure runs dir
+      - name: Prepare runs root
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path $env:UCM_RUNS_ROOT | Out-Null
           Write-Host "UCM_RUNS_ROOT=$env:UCM_RUNS_ROOT"
 
-
-      - name: Healthcheck (fast)
+      - name: Healthcheck (ultrafast) + zip
         shell: pwsh
         run: |
-          python -m tools.calib healthcheck --fast --phase0-c0 2.111 --phase0-rho-inf 0.123 --phase0-kappa 0.00456 --phase0-kappa-s 0.0789
-	  if ($LASTEXITCODE -ne 0) { throw "healthcheck failed (exit=$LASTEXITCODE)" }
-	  $zipPath = "$outDir.zip"
-      - name: Dump last 200 lines of healthcheck log (on failure)
-        if: failure()
-        shell: pwsh
-        run: |
-          Write-Host "=== DEBUG: last logs from workflow steps are above. If healthcheck failed, see Healthcheck step output. ==="
+          $outDir = Join-Path $env:UCM_RUNS_ROOT ("CALIB_HEALTH_CI_" + $env:GITHUB_RUN_ID)
 
+          python -m tools.calib healthcheck `
+            --ultrafast `
+            --runs-root $env:UCM_RUNS_ROOT `
+            --outdir $outDir `
+            --phase0-c0 2.111 `
+            --phase0-rho-inf 0.123 `
+            --phase0-kappa 0.00456 `
+            --phase0-kappa-s 0.0789
+
+          if ($LASTEXITCODE -ne 0) { throw "healthcheck failed (exit=$LASTEXITCODE)" }
+
+          $zipPath = "$outDir.zip"
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Compress-Archive -Path (Join-Path $outDir "*") -DestinationPath $zipPath -Force
+          Write-Host "[ok] zipped: $zipPath"
+
+      - name: Upload healthcheck zip artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: calib-health-windows-${{ github.run_id }}
+          path: ${{ env.UCM_RUNS_ROOT }}\\CALIB_HEALTH_CI_${{ github.run_id }}.zip
+          if-no-files-found: error
 
       - name: Debug dump (on failure)
         if: failure()
         shell: pwsh
         run: |
-          Write-Host "=== DEBUG: list runs root ==="
-          if (Test-Path $env:UCM_RUNS_ROOT) { Get-ChildItem $env:UCM_RUNS_ROOT -Recurse -Force | Select-Object FullName | Format-Table -HideTableHeaders }
+          Write-Host "Listing runs root:"
+          Get-ChildItem -Force -Recurse $env:UCM_RUNS_ROOT | Select-Object FullName | Format-List
 
-          Write-Host "=== DEBUG: wrapper_status.json ==="
-          if (Test-Path $env:UCM_RUNS_ROOT) {
-            Get-ChildItem $env:UCM_RUNS_ROOT -Recurse -Filter wrapper_status.json -ErrorAction SilentlyContinue | ForEach-Object {
-              Write-Host ("--- " + $_.FullName)
-              Get-Content $_.FullName -Raw
-            }
-          }
-
-          Write-Host "=== DEBUG: results_global.json (tail fields) ==="
-          if (Test-Path $env:UCM_RUNS_ROOT) {
-            Get-ChildItem $env:UCM_RUNS_ROOT -Recurse -Filter results_global.json -ErrorAction SilentlyContinue | ForEach-Object {
-              Write-Host ("--- " + $_.FullName)
-              $j = Get-Content $_.FullName -Raw | ConvertFrom-Json
-              $o = [ordered]@{
-                module = $j.module
-                status = $j.status
-                error  = $j.error
-                engine_returncode = $j.engine_returncode
-                stdout_tail = $j.stdout_tail
-                stderr_tail = $j.stderr_tail
-              }
-              $o | Format-List
-            }
-          }
-
-      - name: Upload runs artifact on failure
+      - name: Upload runs (on failure)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: calib-runs-windows
+          name: calib-runs-windows-${{ github.run_id }}
           path: ${{ env.UCM_RUNS_ROOT }}
-          if-no-files-found: ignore
+          if-no-files-found: warn
+
+  healthcheck-fast-windows:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    env:
+      MPLBACKEND: Agg
+      UCM_RUNS_ROOT: "${{ github.workspace }}\\_UCM_RUNS_FAST"
+    steps:
+      - name: Checkout (with LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps (CI)
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install -r requirements-ci.txt
+
+      - name: Prepare runs root
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:UCM_RUNS_ROOT | Out-Null
+          Write-Host "UCM_RUNS_ROOT=$env:UCM_RUNS_ROOT"
+
+      - name: Healthcheck (fast) + zip
+        shell: pwsh
+        run: |
+          $outDir = Join-Path $env:UCM_RUNS_ROOT ("CALIB_HEALTH_FAST_CI_" + $env:GITHUB_RUN_ID)
+
+          python -m tools.calib healthcheck `
+            --fast `
+            --runs-root $env:UCM_RUNS_ROOT `
+            --outdir $outDir `
+            --phase0-c0 2.111 `
+            --phase0-rho-inf 0.123 `
+            --phase0-kappa 0.00456 `
+            --phase0-kappa-s 0.0789
+
+          if ($LASTEXITCODE -ne 0) { throw "healthcheck failed (exit=$LASTEXITCODE)" }
+
+          $zipPath = "$outDir.zip"
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Compress-Archive -Path (Join-Path $outDir "*") -DestinationPath $zipPath -Force
+          Write-Host "[ok] zipped: $zipPath"
+
+      - name: Upload fast healthcheck zip artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: calib-health-fast-windows-${{ github.run_id }}
+          path: ${{ env.UCM_RUNS_ROOT }}\\CALIB_HEALTH_FAST_CI_${{ github.run_id }}.zip
+          if-no-files-found: error
+
+      - name: Debug dump (on failure)
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "Listing runs root:"
+          Get-ChildItem -Force -Recurse $env:UCM_RUNS_ROOT | Select-Object FullName | Format-List
+
+      - name: Upload runs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: calib-runs-fast-windows-${{ github.run_id }}
+          path: ${{ env.UCM_RUNS_ROOT }}
+          if-no-files-found: warn
