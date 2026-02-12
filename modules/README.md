@@ -173,3 +173,16 @@ A global summary is written to:
 Publish-only mode for Ringdown (skip engine run):
 
 python -X utf8 tools/run_calib_all.py --outdir <OUTDIR> --rd-no-run
+
+## Ultrafast healthcheck: self-contained run_dir + zip (Windows)
+
+- Run: `python tools/calib.py healthcheck --ultrafast`
+  - By default outputs to `C:\UCM\RUNS\CALIB_HEALTH_<ts>\` (unless `--runs-root` is provided).
+- Inside `run_dir` you will find:
+  - module outputs: `*/results/results_global.json`, `*/results/results_items.csv`, `*/results/wrapper_status.json`
+  - summary: `calib_summary.csv`, `calib_summary.json`
+  - collect bundle: `CORE_CALIB_COLLECT_<ts>/core_calib_merged.csv` and `core_calib_report.md`
+- Zip any run in one command:
+  - `powershell -ExecutionPolicy Bypass -File tools/scripts/zip_run_dir.ps1 -RunDir "<run_dir>"`
+  - Produces `<run_dir>.zip` containing modules + summary + merged/report/manifest.
+
