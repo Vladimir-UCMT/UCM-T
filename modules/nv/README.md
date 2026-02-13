@@ -86,3 +86,7 @@ Wrapper status payload:
 
 This module is considered **operational** at the pipeline level.
 Further work may extend structured metric extraction from real ODMR fit outputs.
+
+## Bench sanity (real data)
+NV wrapper reads bench dataset via $env:UCM_NV_BENCH_DATASET_ID (default: NV_DC211_LOCKIN_CW_ODMR_AM680_V1).
+
