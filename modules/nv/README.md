@@ -7,15 +7,23 @@ within the UCM-T framework.
 
 ## Structure
 
+```
 modules/nv/
+  bench/
+    NV_DC211_LOCKIN_CW_ODMR_AM680_V1/
   engine/
     nv_engine_v023.py
   pilot_nv.py
   README.md
+```
+
+- `bench/`  
+  Small, commit-friendly **ingestion references** (raw→CSV).  
+  Converter CLI: `python -m tools.nv_ingest`.
 
 - `engine/`  
   Domain physics code for NV-center fitting and analysis.  
-  Kept independent from any pipeline / orchestration logic.
+  Kept independent from pipeline / orchestration logic.
 
 - `pilot_nv.py`  
   A lightweight **wrapper/adapter** that runs the NV engine and publishes
@@ -72,9 +80,9 @@ Wrapper status payload:
 
 ## Current status
 
-- NV engine runs in demo mode and produces contract-compliant outputs.
+- NV wrapper runs the engine in demo mode and produces contract-compliant outputs.
 - UTF-8 handling is enforced for Windows compatibility.
 - Fully integrated into the unified calibration launcher (smoke test passes).
 
 This module is considered **operational** at the pipeline level.
-Further work may extend structured metric extraction from real NV fit outputs.
+Further work may extend structured metric extraction from real ODMR fit outputs.
