@@ -1,0 +1,22 @@
+{
+  "schema": "nv_ingest_manifest_v1",
+  "dataset_id": "NV_DC211_LOCKIN_CW_ODMR_AM680_V1",
+  "created_utc": "2026-02-13T04:58:18.384329Z",
+  "n_records": 2,
+  "records": [
+    {
+      "item_id": "NV_DC211_LOCKIN_CW_ODMR_AM680_V1::dc211_no_field_raw",
+      "b_mt": 0.0,
+      "csv": "csv/dc211_no_field_raw__cw_odmr.csv",
+      "meta": "meta/dc211_no_field_raw__meta.json",
+      "raw": "raw/dc211_no_field_raw.txt"
+    },
+    {
+      "item_id": "NV_DC211_LOCKIN_CW_ODMR_AM680_V1::dc211_b4mt_raw",
+      "b_mt": 4.0,
+      "csv": "csv/dc211_b4mt_raw__cw_odmr.csv",
+      "meta": "meta/dc211_b4mt_raw__meta.json",
+      "raw": "raw/dc211_B4mT_raw.txt"
+    }
+  ]
+}
